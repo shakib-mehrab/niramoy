@@ -15,7 +15,9 @@ License: MIT (code). See [Third-party licences](#third-party-licences).
 
 ## Download
 
-Get the latest **`niramoy-vX.Y.Z.apk`** from [Releases](https://github.com/shakib-mehrab/niramoy/releases).
+**[⬇ Download the latest APK](https://github.com/shakib-mehrab/niramoy/releases/latest/download/niramoy.apk)**
+(this link always gives the newest version) · Website: **https://niramoy.shakibmehrab.site** ·
+all versions: [Releases](https://github.com/shakib-mehrab/niramoy/releases).
 On the phone, allow "Install unknown apps" for your browser or file manager, open the APK, and then follow
 **ফোন ঠিক করে নিন** (phone setup) inside the app.
 
