@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cloud (Firestore + Supabase) is the backup; device backup is off so a restore never resurrects stale alarms. -->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

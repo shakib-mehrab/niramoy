@@ -1,0 +1,25 @@
+*.iml
+.gradle
+.kotlin
+/local.properties
+local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+.env
+keystore.properties
+*.jks
+*.keystore
+app/google-services.json
+tools/tts/.venv/
+PROMPT.md
+# Root-level release outputs
+*.apk
+*.aab
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log

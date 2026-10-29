@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tones are looked up by name (SoundHelper.rawName), so stop R8 resource shrinking from removing them. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/*" />

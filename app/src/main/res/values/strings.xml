@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only the launcher label lives here; every in-app string is in i18n/StringsBn.kt and StringsEn.kt. -->
+    <string name="app_name">নিরাময়</string>
+</resources>

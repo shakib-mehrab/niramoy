@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>নিরাময় · NIRAMOY</title>
+<meta name="description" content="বয়স্কদের জন্য সহজ, বাংলা, বিনামূল্যের ওষুধ মনে করানোর অ্যাপ। A free, Bangla-first medicine reminder for elderly people.">
+<meta property="og:title" content="নিরাময় — সময়মতো ওষুধ, ভালো থাকা">
+<meta property="og:description" content="বাংলায় কথা বলে ওষুধের সময় মনে করায়। বিনামূল্যে, ওপেন সোর্স।">
+<meta property="og:image" content="https://niramoy.shakibmehrab.site/img/home.png">
+<meta name="theme-color" content="#4F44C9">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236C63E6'/%3E%3Cg transform='rotate(-45 50 50)'%3E%3Crect x='22' y='36' width='56' height='28' rx='14' fill='%23fff'/%3E%3Crect x='50' y='36' width='28' height='28' rx='0' fill='%23D9D6FF'/%3E%3Cpath d='M64 36h0a14 14 0 0 1 0 28h0z' fill='%23D9D6FF'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #4F44C9; --brand-2: #6C63E6; --soft: #E9E7FF; --bg: #F4F3FC; --surface: #fff;
+    --text: #1E1B3A; --muted: #55526E; --border: #D9D7EC; --ok: #1B7F3B; --danger: #D32F2F;
+    --radius: 28px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12111F; --surface: #1C1A2E; --soft: #2A2750; --text: #F1F0FA; --muted: #B5B2CC; --border: #34315A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12111F; --surface: #1C1A2E; --soft: #2A2750; --text: #F1F0FA; --muted: #B5B2CC; --border: #34315A;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Hind Siliguri", "Poppins", system-ui, sans-serif; font-size: 19px; line-height: 1.6;
+  }
+  .en { font-family: "Poppins", system-ui, sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+  /* hero */
+  .hero { background: linear-gradient(135deg, var(--brand-2), var(--brand)); color: #fff; padding: 20px 0 0; overflow: hidden; }
+  nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 26px; text-decoration: none; }
+  .logo svg { width: 44px; height: 44px; }
+  .nav-links { display: flex; gap: 18px; font-size: 17px; }
+  .nav-links a { text-decoration: none; opacity: .9; }
+  .nav-links a:hover { opacity: 1; text-decoration: underline; }
+  .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 32px; align-items: end; padding-top: 40px; }
+  .hero h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.15; margin: 0 0 10px; }
+  .hero .tag { font-size: clamp(20px, 2.4vw, 26px); opacity: .95; margin: 0 0 6px; }
+  .hero .tag-en { font-size: 16px; opacity: .8; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 60px; padding: 12px 26px; border-radius: 20px;
+    font-weight: 700; font-size: 21px; text-decoration: none; border: 2px solid transparent; cursor: pointer;
+  }
+  .btn svg { width: 26px; height: 26px; }
+  .btn-primary { background: #fff; color: var(--brand); box-shadow: 0 10px 30px rgba(20, 10, 80, .25); }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-ghost { border-color: rgba(255,255,255,.7); color: #fff; }
+  .small { font-size: 15px; opacity: .85; }
+  .phone-row { display: flex; justify-content: center; gap: 18px; margin-bottom: -60px; }
+  .phone {
+    width: 230px; border-radius: 34px; border: 8px solid #fff; background: #fff; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(15, 8, 70, .35);
+  }
+  .phone img { display: block; width: 100%; height: auto; }
+  .phone.tilt { transform: rotate(4deg) translateY(30px); width: 200px; }
+
+  section { padding: 90px 0 30px; }
+  h2 { font-size: clamp(30px, 4vw, 42px); margin: 0 0 6px; line-height: 1.25; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 24px; border: 1px solid var(--border); }
+  .card .ic { width: 58px; height: 58px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; margin-bottom: 12px; }
+  .card .ic svg { width: 32px; height: 32px; color: var(--brand); }
+  .card h3 { margin: 0 0 4px; font-size: 23px; }
+  .card p { margin: 0; color: var(--muted); font-size: 18px; }
+
+  .shots { display: flex; gap: 18px; overflow-x: auto; padding: 6px 2px 18px; scroll-snap-type: x mandatory; }
+  .shots figure { margin: 0; flex: 0 0 220px; scroll-snap-align: start; }
+  .shots img { width: 100%; border-radius: 26px; border: 6px solid var(--surface); box-shadow: 0 12px 30px rgba(40, 30, 120, .15); }
+  .shots figcaption { text-align: center; color: var(--muted); font-size: 17px; margin-top: 6px; }
+
+  .steps { counter-reset: s; display: grid; gap: 14px; }
+  .step { display: grid; grid-template-columns: 56px 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 18px; }
+  .step::before { counter-increment: s; content: counter(s, bengali); width: 56px; height: 56px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 26px; }
+  .step h3 { margin: 0; font-size: 22px; }
+  .step p { margin: 2px 0 0; color: var(--muted); font-size: 18px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .note { background: var(--soft); border-radius: var(--radius); padding: 24px; }
+  .note h3 { margin-top: 0; }
+  .note ul { margin: 0; padding-left: 22px; }
+  .note li { margin: 4px 0; }
+
+  .final { text-align: center; padding: 70px 0; }
+  .final .btn-primary { background: var(--brand); color: #fff; }
+  footer { border-top: 1px solid var(--border); padding: 24px 0 40px; color: var(--muted); font-size: 16px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+  .disclaimer { font-size: 16px; color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; text-align: center; }
+    .cta { justify-content: center; }
+    .phone.tilt { display: none; }
+    .features, .two { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="#">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="26" fill="rgba(255,255,255,.18)"/><g transform="rotate(-45 50 50)"><rect x="22" y="37" width="56" height="26" rx="13" fill="#fff"/><path d="M50 37h15a13 13 0 0 1 0 26H50z" fill="#D9D6FF"/></g></svg>
+        নিরাময়
+      </a>
+      <div class="nav-links">
+        <a href="#features">সুবিধা</a>
+        <a href="#setup">কীভাবে চালু করবেন</a>
+        <a href="#privacy">তথ্যের নিরাপত্তা</a>
+        <a class="en" href="https://github.com/shakib-mehrab/niramoy">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="hero-grid">
+      <div>
+        <h1>সময়মতো ওষুধ,<br>ভালো থাকা</h1>
+        <p class="tag">মা-বাবার জন্য সহজ বাংলা ওষুধ মনে করানোর অ্যাপ। সময় হলে মুখে বলে মনে করায় — “সকালের খাবারের পরে ওষুধ খান”।</p>
+        <p class="tag-en en">A free, Bangla-first medicine reminder for elderly people. It speaks.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/shakib-mehrab/niramoy/releases/latest/download/niramoy.apk">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 5.83V16h2V5.83l3.08 3.09L17.5 7.5 12 2z" transform="rotate(180 12 11)"/></svg>
+            অ্যাপ ডাউনলোড (Android)
+          </a>
+          <a class="btn btn-ghost" href="#setup">কীভাবে চালু করবেন</a>
+        </div>
+        <p class="small">বিনামূল্যে · কোনো বিজ্ঞাপন নেই · ওপেন সোর্স · Android 7.0+</p>
+      </div>
+      <div class="phone-row">
+        <div class="phone"><img src="img/home.png" alt="আজকের ওষুধের তালিকা ও বড় খেয়েছি বোতাম" width="1080" height="2400"></div>
+        <div class="phone tilt"><img src="img/add.png" alt="ওষুধ যোগ করার পাতা" width="1080" height="2400" loading="lazy"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="features">
+    <div class="wrap">
+      <h2>যা যা পারে</h2>
+      <p class="sub">বড় লেখা, বড় বোতাম, ছবি আর এক-দুই শব্দ — পড়তে-লিখতে কষ্ট হলেও চালানো যায়।</p>
+      <div class="features">
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
+          <h3>মুখে বলে মনে করায়</h3><p>সময় হলে বাংলায় কথা বলে এলার্ম বাজে, লক করা ফোনেও পুরো পর্দায় দেখায়। উত্তর না দিলে আবার মনে করায়।</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+          <h3>এক চাপে “খেয়েছি”</h3><p>খাওয়া হলো, বাদ গেল, না খাওয়া হলো — সব হিসাব থাকে। সপ্তাহের রঙিন ফোঁটা আর শতকরা হার।</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9z"/></svg></div>
+          <h3>প্রেসক্রিপশনের ছবি</h3><p>ছবি তুললেই ওষুধের নাম, কখন খাবেন পড়ে নেয়। আপনি দেখে ঠিক করে সেভ করবেন।</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.3-3A5.3 5.3 0 0 1 12 16.1 5.3 5.3 0 0 1 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg></div>
+          <h3>বলে লিখুন</h3><p>“সুগার ১২০, প্রেশার ১৩০ বাই ৮০” — বললেই লিখে নেয়। শরীর কেমন, ওজন, জ্বরও রাখা যায়।</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg></div>
+          <h3>জরুরি বোতাম</h3><p>এক চাপে ছেলে-মেয়েকে ফোন, বা হোয়াটসঅ্যাপে “আমার সাহায্য দরকার” বার্তা ও ঠিকানা।</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.99 5.99 0 0 0 0 14c0 3.31 2.69 6 6 6h13a5 5 0 0 0 .35-9.96z"/></svg></div>
+          <h3>ফোন বদলালেও সব থাকে</h3><p>নেট ছাড়াও চলে। অ্যাকাউন্টে ঢুকলে সব তথ্য, প্রেসক্রিপশন আর রিপোর্টের ছবি ক্লাউডে থাকে।</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="wrap">
+      <h2>দেখতে যেমন</h2>
+      <p class="sub">আসল ফোন থেকে নেওয়া ছবি।</p>
+      <div class="shots">
+        <figure><img src="img/home.png" alt="আজকের পাতা" loading="lazy" width="1080" height="2400"><figcaption>আজকের ওষুধ</figcaption></figure>
+        <figure><img src="img/add.png" alt="ওষুধ যোগ" loading="lazy" width="1080" height="2400"><figcaption>ওষুধ যোগ করা</figcaption></figure>
+        <figure><img src="img/time.png" alt="সময় ঠিক করা" loading="lazy" width="1080" height="2400"><figcaption>বড় সময় বাছাই</figcaption></figure>
+        <figure><img src="img/setup.png" alt="ফোন সেটআপ" loading="lazy" width="1080" height="2400"><figcaption>ছবিসহ ফোন সেটআপ</figcaption></figure>
+        <figure><img src="img/signin.png" alt="সাইন ইন" loading="lazy" width="1080" height="2400"><figcaption>অ্যাকাউন্ট</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="setup">
+    <div class="wrap">
+      <h2>কীভাবে চালু করবেন</h2>
+      <p class="sub">পরিবারের কেউ একবার ১৫ মিনিট সময় দিলেই হবে।</p>
+      <div class="steps">
+        <div class="step"><div><h3>অ্যাপ নামান</h3><p>উপরের “অ্যাপ ডাউনলোড” চাপুন। ফোন জিজ্ঞেস করলে “Install unknown apps / অজানা অ্যাপ” অনুমতি দিন, তারপর Install।</p></div></div>
+        <div class="step"><div><h3>অ্যাকাউন্টে ঢুকুন</h3><p>ইমেইল দিয়ে বা গুগল দিয়ে ঢুকুন। এতে ফোন হারালেও সব তথ্য ফেরত পাবেন।</p></div></div>
+        <div class="step"><div><h3>রুটিন বলুন</h3><p>কখন ঘুম থেকে ওঠেন, নাস্তা, দুপুর আর রাতের খাবার কখন — এগুলো দিয়েই ওষুধের সময় ঠিক হয়।</p></div></div>
+        <div class="step"><div><h3>“ফোন ঠিক করে নিন” — সব সবুজ টিক</h3><p>প্রতিটা বোতাম চাপুন। শেষে “পরীক্ষা” চেপে ফোন লক করুন — ১৫ সেকেন্ডে এলার্ম বাজলে সব ঠিক।</p></div></div>
+        <div class="step"><div><h3>ওষুধ যোগ করুন</h3><p>একটা একটা করে, অনেকগুলো একসাথে, বা প্রেসক্রিপশনের ছবি তুলে।</p></div></div>
+        <div class="step"><div><h3>জরুরি নম্বর দিন</h3><p>কাগজপত্র → আমার তথ্য থেকে ছেলে-মেয়ের নম্বর যোগ করুন।</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap two">
+      <div class="note">
+        <h3>তথ্যের নিরাপত্তা</h3>
+        <ul>
+          <li>প্রত্যেকের তথ্য শুধু তার নিজের অ্যাকাউন্টে; অন্য কেউ দেখতে পারে না।</li>
+          <li>কোনো বিজ্ঞাপন নেই, কোনো ট্র্যাকিং নেই।</li>
+          <li>অ্যাকাউন্ট ছাড়াও চালানো যায় — তখন তথ্য শুধু ফোনেই থাকে।</li>
+          <li>অ্যাপ নিজেই নতুন আপডেট এলে জানায়।</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3 class="en">Open source</h3>
+        <p class="en" style="margin-top:0">NIRAMOY is free and open source (MIT). Kotlin + Jetpack Compose, Room + Firestore, on-device Tesseract OCR, Bangla voice tones generated with MMS-TTS. Build your own copy with your own free backend in ~20 minutes.</p>
+        <a class="btn btn-ghost en" style="color:var(--brand);border-color:var(--brand);font-size:18px;min-height:52px" href="https://github.com/shakib-mehrab/niramoy">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>মায়ের ফোনে আজই চালু করুন</h2>
+      <p class="sub">সম্পূর্ণ বিনামূল্যে।</p>
+      <a class="btn btn-primary" href="https://github.com/shakib-mehrab/niramoy/releases/latest/download/niramoy.apk">অ্যাপ ডাউনলোড (Android)</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="disclaimer">এটা শুধু ওষুধ মনে করানোর অ্যাপ, ডাক্তারি পরামর্শ নয়। · <span class="en">A reminder tool, not medical advice.</span></span>
+    <span class="en">Made with care by <a href="https://shakibmehrab.site">Shakib Mehrab</a> · <a href="https://github.com/shakib-mehrab/niramoy">GitHub</a></span>
+  </div>
+</footer>
+</body>
+</html>

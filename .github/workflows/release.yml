@@ -1,0 +1,84 @@
+# Push a version tag and everything else is automatic:
+#   git tag -a v1.1.0 -m "নতুন ডিজাইন"   (the tag message becomes the in-app "what's new" text)
+#   git push origin v1.1.0
+# The workflow tests, builds and signs the APK (versionName/versionCode come from the tag), then publishes
+# niramoy-vX.Y.Z.apk + version.json to a GitHub Release. Installed apps read
+# releases/latest/download/version.json and offer the update.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD   - release signing key (never change it)
+#   GOOGLE_SERVICES_JSON_BASE64                                     - app/google-services.json
+#   SUPABASE_URL, SUPABASE_ANON_KEY                                 - file storage
+# Optional: put a number in update/min-version-code.txt to force everyone older than it to update.
+name: Release APK
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > niramoy-release.jks
+          printf 'storeFile=niramoy-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > app/google-services.json
+          printf 'SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nSUPABASE_BUCKET=health-files\n' \
+            "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > .env
+
+      - name: Test
+        run: ./gradlew :app:testDebugUnitTest --no-configuration-cache -PappVersion=${GITHUB_REF_NAME}
+
+      - name: Build signed release
+        run: ./gradlew :app:assembleRelease --no-configuration-cache -PappVersion=${GITHUB_REF_NAME} -PupdateRepo=${GITHUB_REPOSITORY}
+
+      - name: Prepare APK and version.json
+        run: |
+          APK="niramoy-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
+          # Stable name: https://github.com/<repo>/releases/latest/download/niramoy.apk always gets the newest.
+          cp "$APK" niramoy.apk
+          META=app/build/outputs/apk/release/output-metadata.json
+          CODE=$(jq -r '.elements[0].versionCode' "$META")
+          NAME=$(jq -r '.elements[0].versionName' "$META")
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          NOTES=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP/,$d')
+          MIN=$(cat update/min-version-code.txt 2>/dev/null || echo 0)
+          jq -n --argjson code "$CODE" --arg name "$NAME" --arg sha "$SHA" --arg notes "$NOTES" --argjson min "$MIN" \
+            --arg url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${APK}" \
+            '{versionCode:$code, versionName:$name, apkUrl:$url, sha256:$sha, notes:$notes, minSupportedVersionCode:$min}' > version.json
+          cat version.json
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            niramoy-*.apk
+            niramoy.apk
+            version.json
+          generate_release_notes: true
+          make_latest: true
