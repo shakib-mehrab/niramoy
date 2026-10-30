@@ -96,7 +96,7 @@ object Mappers {
         "wakeTime" to wakeTime, "breakfastTime" to breakfastTime, "lunchTime" to lunchTime,
         "dinnerTime" to dinnerTime, "sleepTime" to sleepTime, "beforeMealOffset" to beforeMealOffset,
         "afterMealOffset" to afterMealOffset, "remindCount" to remindCount, "remindInterval" to remindInterval,
-        "snoozeMinutes" to snoozeMinutes, "tone" to tone, "onboarded" to onboarded, "updatedAt" to updatedAt
+        "snoozeMinutes" to snoozeMinutes, "tone" to tone, "voiceLanguage" to voiceLanguage, "onboarded" to onboarded, "updatedAt" to updatedAt
     )
 
     fun settings(m: Map<String, Any?>): SettingsEntity {
@@ -110,6 +110,7 @@ object Mappers {
             afterMealOffset = m.int("afterMealOffset", d.afterMealOffset),
             remindCount = m.int("remindCount", d.remindCount), remindInterval = m.int("remindInterval", d.remindInterval),
             snoozeMinutes = m.int("snoozeMinutes", d.snoozeMinutes), tone = m.str("tone", d.tone),
+            voiceLanguage = m.str("voiceLanguage", m.str("language", d.voiceLanguage)),
             onboarded = m.bool("onboarded", true), updatedAt = m.long("updatedAt")
         )
     }

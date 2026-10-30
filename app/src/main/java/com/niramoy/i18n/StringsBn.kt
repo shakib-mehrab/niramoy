@@ -5,6 +5,14 @@ package com.niramoy.i18n
  */
 object StringsBn {
     val map: Map<String, String> = mapOf(
+        // 1.1 redesign
+        "records_short" to "কাগজপত্র", "add_short" to "যোগ", "bp_short" to "প্রেশার", "sos" to "জরুরি", "your_schedule" to "আপনার রুটিন",
+        "no_doses_day" to "এই দিনে কোনো ওষুধ নেই", "medication_tracked" to "ওষুধ খাওয়ার হিসাব", "view_all" to "সব দেখুন",
+        "st_not_yet" to "এখনো না", "change_status" to "{0} বদলান", "more_options" to "অন্যান্য", "tap_to_change" to "বদলাতে যেকোনো লাইনে চাপুন।",
+        "speak_title" to "বলে লিখুন", "measurement_tracker" to "মাপজোখ", "no_reading" to "এখনো মাপা হয়নি",
+        "large_text" to "বড় লেখা", "large_text_hint" to "সব লেখা আরও বড় ও সহজে পড়ার মতো হবে",
+        "voice_language" to "কোন ভাষায় বলবে", "tone_custom" to "আমার শব্দ", "custom_pick" to "নিজের শব্দ বাছুন",
+        "custom_change" to "নিজের শব্দ বদলান", "custom_bad" to "এই ফাইল বাজানো যাচ্ছে না। MP3 বা M4A ফাইল দিন।",
         "app_name" to "নিরাময়",
         "disclaimer" to "এটা শুধু ওষুধ মনে করানোর অ্যাপ, ডাক্তারি পরামর্শ নয়।",
         "back" to "পেছনে", "read_aloud" to "পড়ে শোনাও", "yes" to "হ্যাঁ", "no" to "না", "ok" to "ঠিক আছে",

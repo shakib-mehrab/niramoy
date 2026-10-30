@@ -25,15 +25,18 @@ Needs Android 7.0 or newer. It's built to work well on small, low-end phones.
 
 ## Features
 
-- **Bangla by default** with a বাংলা / EN switch on every screen, Bangla numerals, large text (20sp+),
-  56dp+ buttons, and icons together with words. Colour is never the only signal.
+- **English by default, Bangla anytime:** an EN / বাং switch on every screen and Bangla numerals in Bangla mode.
+  The clean, modern design works for every age. Settings → **Larger text** makes everything bigger. Icons
+  always come with words, and colour is never the only signal.
 - **Medicines:** add one, add many at once, or take a **photo of a prescription**. The photo is read on the phone and
   you always check the result before anything is saved. Each medicine has a dose, morning / noon / night,
   before / after meal, and runs either ongoing or as a course of N days that ends automatically. You can stop, resume, edit or delete it.
 - **Automatic reminder times** from her routine (meal time ± minutes). Alarms are exact, show full screen
   on the lock screen, and **repeat until answered** (count and gap are configurable). Unanswered doses are logged as **missed**.
-- **Spoken Bangla / English tones** for each meal slot, a generic phrase, a beep, or the phone's alarm sound.
-- **Adherence:** taken / missed / skipped with times, weekly dots, and 7 / 30-day percentages.
+- **Spoken reminders in English (default) or Bangla** for each meal slot, a generic phrase, a beep, the phone's
+  alarm sound, or **your own sound** (pick any audio file, e.g. a family member's recorded voice).
+- **Adherence:** taken / missed / skipped with times, weekly dots, and a 7 / 30-day gauge. Tap any dose to change its
+  status later (taken ↔ skipped ↔ missed ↔ not yet). The week strip on Home lets you review and fix past days.
 - **Body log:** daily mood (5 faces), blood sugar (fasting / after meal), blood pressure + pulse, weight
   and temperature, with simple charts and low / normal / high labels. **Speak instead of typing:** "সুগার ১২০, প্রেশার ১৩০ বাই ৮০".
 - **Records:** doctor visits (with a next-visit reminder), a prescription and report gallery (photos / PDF),

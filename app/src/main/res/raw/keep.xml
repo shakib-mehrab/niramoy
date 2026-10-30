@@ -1,3 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tones are looked up by name (SoundHelper.rawName), so stop R8 resource shrinking from removing them. -->
-<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/*" />
+<!-- Looked up by name at runtime, so R8 resource shrinking must not remove them:
+     tones (SoundHelper.rawName) and the Google web client id generated from google-services.json (sign-in). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/*,@string/default_web_client_id" />

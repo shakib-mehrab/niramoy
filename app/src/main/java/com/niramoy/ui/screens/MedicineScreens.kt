@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -338,6 +339,7 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
     val m = meds.firstOrNull { it.id == id }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmStop by remember { mutableStateOf(false) }
+    var editLog by remember { mutableStateOf<DoseLogEntity?>(null) }
     val lang = LocalLang.current
     if (m == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return }
     val myLogs = logs.filter { it.medicineId == id }.sortedWith(compareByDescending<DoseLogEntity> { it.date }.thenByDescending { it.at })
@@ -387,16 +389,24 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
 
         SectionTitle(t("history"))
         if (myLogs.isEmpty()) Text(t("no_history"), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextMuted)
-        myLogs.take(60).forEach { l ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(Num.date(l.date, lang, withYear = false) + " · " + t("slot_${l.slot}"), style = MaterialTheme.typography.bodyLarge)
-                    if (l.status != DoseStatus.MISSED.id) Text(Num.time(Dates.minuteOfDay(l.at), lang), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+        if (myLogs.isNotEmpty()) Text(t("tap_to_change"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+        AppCard(Modifier.padding(top = 8.dp), padding = 8.dp) {
+            myLogs.take(60).forEachIndexed { i, l ->
+                if (i > 0) HorizontalDivider(color = AppColors.Border.copy(alpha = 0.6f))
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { editLog = l }.padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(Num.date(l.date, lang, withYear = false) + " · " + t("slot_${l.slot}"), style = MaterialTheme.typography.bodyLarge)
+                        if (l.status != DoseStatus.MISSED.id) Text(Num.time(Dates.minuteOfDay(l.at), lang), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+                    }
+                    StatusBadge(DoseStatus.of(l.status), onClick = { editLog = l })
                 }
-                StatusBadge(DoseStatus.of(l.status))
             }
-            HorizontalDivider(color = AppColors.Border)
         }
+    }
+    editLog?.let { l ->
+        DoseStatusDialog(m.name, DoseStatus.of(l.status), allowNotYet = false,
+            onPick = { st -> if (st != null) vm.setLogStatus(l, st); editLog = null }, onDismiss = { editLog = null })
     }
     if (confirmStop) ConfirmDialog(Strings.f("stop_q", lang, m.name), t("stop_msg"), danger = true,
         onYes = { vm.setMedicineActive(m.id, false); confirmStop = false }, onNo = { confirmStop = false })

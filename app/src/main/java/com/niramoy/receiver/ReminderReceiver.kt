@@ -120,7 +120,7 @@ class ReminderReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .build()
         runCatching { (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.notify(9_002, n) }
-        val uri = com.niramoy.alarm.SoundHelper.uriFor(context, s.tone, s.language, null, null)
+        val uri = com.niramoy.alarm.SoundHelper.uriFor(context, s.tone, s.voiceLanguage, null, null)
         kotlinx.coroutines.withTimeoutOrNull(8_000L) {
             kotlinx.coroutines.suspendCancellableCoroutine<Unit> { cont ->
                 val p = com.niramoy.alarm.SoundHelper.preview(context, uri) { if (cont.isActive) cont.resume(Unit) }

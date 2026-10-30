@@ -146,7 +146,7 @@ data class ContactEntity(
 @Entity(tableName = "settings")
 data class SettingsEntity(
     @PrimaryKey val rowId: Int = 1,
-    val language: String = "bn",
+    val language: String = "en",
     val name: String = "",
     val bloodGroup: String = "",
     val allergies: String = "",
@@ -161,6 +161,8 @@ data class SettingsEntity(
     val remindInterval: Int = 10,
     val snoozeMinutes: Int = 10,
     val tone: String = TONE_VOICE,
+    /** Language of the spoken reminder ("en" / "bn"), independent of the app language. */
+    val voiceLanguage: String = "en",
     val onboarded: Boolean = false,
     val updatedAt: Long = 0L
 ) {
@@ -181,6 +183,7 @@ data class SettingsEntity(
         const val TONE_GENERIC = "generic"   // "ওষুধ খাওয়ার সময় হয়েছে"
         const val TONE_BEEP = "beep"
         const val TONE_SYSTEM = "system"     // phone's own alarm sound
-        val TONES = listOf(TONE_VOICE, TONE_GENERIC, TONE_BEEP, TONE_SYSTEM)
+        const val TONE_CUSTOM = "custom"     // a sound file the user picked (kept on this phone)
+        val TONES = listOf(TONE_VOICE, TONE_GENERIC, TONE_BEEP, TONE_SYSTEM, TONE_CUSTOM)
     }
 }

@@ -46,6 +46,23 @@ import com.niramoy.util.Num
 /** Very good -> very bad, each with a face and a word. */
 val MOODS = listOf(5 to "😄", 4 to "🙂", 3 to "😐", 2 to "🙁", 1 to "😫")
 
+/** Metric card: coloured icon + title + "+" (reference measurement tracker). */
+@Composable
+private fun MetricCard(icon: ImageVector, title: String, tint: Color, modifier: Modifier = Modifier, compact: Boolean = false,
+                       onAdd: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    AppCard(modifier, onClick = if (compact) onAdd else null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconSquare(icon, tint = tint, size = 38.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            if (!compact) CircleIconButton(Icons.Filled.Add, t("new_entry"), onAdd, size = 36.dp, container = AppColors.SurfaceAlt)
+        }
+        Spacer(Modifier.height(12.dp))
+        content()
+    }
+}
+
 @Composable
 fun LevelBadge(level: Level) {
     val (c, icon, key) = when (level) {
@@ -53,7 +70,7 @@ fun LevelBadge(level: Level) {
         Level.LOW -> Triple(AppColors.Skipped, Icons.Filled.ArrowDownward, "lvl_low")
         Level.NORMAL -> Triple(AppColors.Taken, Icons.Filled.Check, "lvl_normal")
     }
-    Row(Modifier.clip(RoundedCornerShape(12.dp)).background(c.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.clip(CircleShape).background(c.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = c, modifier = Modifier.size(20.dp))
         Text(t(key), color = c, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
     }
@@ -78,52 +95,91 @@ fun HealthScreen(vm: MainViewModel, nav: NavController) {
         }
     }
 
-    Page(vm, t("tab_health"), speak = t("how_are_you")) {
+    val micLaunch = {
+        val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang == "bn") "bn-BD" else "en-US")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, Strings.t("mic_prompt", lang))
+        }
+        try { speech.launch(i) } catch (_: Exception) { noRecognizer = true }
+    }
+    val lastSugar = logs.firstOrNull { it.sugar != null }
+    val lastBp = logs.firstOrNull { it.systolic != null && it.diastolic != null }
+    val lastPulse = logs.firstOrNull { it.pulse != null }
+
+    Page(vm, t("tab_health"), speak = t("how_are_you"), trailing = {
+        CircleIconButton(Icons.Filled.Add, t("new_entry"), { nav.navigate("health_entry") })
+    }) {
+        // Mood: five faces in one row.
         AppCard {
-            Text(t("how_are_you"), style = MaterialTheme.typography.headlineSmall)
+            Text(t("how_are_you"), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 MOODS.forEach { (v, face) ->
                     val on = todayMood == v
                     Column(
-                        Modifier.weight(1f).clip(RoundedCornerShape(18.dp))
-                            .background(if (on) AppColors.BrandSoft else AppColors.Surface)
-                            .border(2.dp, if (on) AppColors.Brand else AppColors.Border, RoundedCornerShape(18.dp))
+                        Modifier.weight(1f).clip(RoundedCornerShape(20.dp))
+                            .background(if (on) AppColors.BrandSoft else AppColors.SurfaceAlt.copy(alpha = 0.5f))
+                            .border(1.5.dp, if (on) AppColors.Brand else Color.Transparent, RoundedCornerShape(20.dp))
                             .clickable(role = Role.RadioButton) { vm.setMood(v) }
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(face, fontSize = 34.sp)
-                        Text(t("mood_$v"), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
+                        Text(face, fontSize = 28.sp)
+                        Text(t("mood_$v"), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
+                            color = if (on) AppColors.Brand else AppColors.TextMuted)
                     }
                 }
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // Big mic: speak in Bangla, we fill the form, you confirm.
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                Modifier.size(120.dp).clip(CircleShape).background(AppColors.HeroBrush).clickable(role = Role.Button) {
-                    val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang == "bn") "bn-BD" else "en-US")
-                        putExtra(RecognizerIntent.EXTRA_PROMPT, Strings.t("mic_prompt", lang))
-                    }
-                    try { speech.launch(i) } catch (_: Exception) { noRecognizer = true }
-                },
-                contentAlignment = Alignment.Center
-            ) { Icon(Icons.Filled.Mic, contentDescription = t("speak"), tint = Color.White, modifier = Modifier.size(64.dp)) }
-            Spacer(Modifier.height(6.dp))
-            Text(t("speak"), style = MaterialTheme.typography.titleMedium, color = AppColors.Brand)
-            Text(t("mic_example"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted, textAlign = TextAlign.Center)
-            if (noRecognizer) Text(t("mic_missing"), color = AppColors.Missed, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        // Voice entry: speak, we fill the form, you confirm.
+        AppCard(onClick = micLaunch) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(56.dp).clip(CircleShape).background(AppColors.HeroBrush), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.Mic, contentDescription = t("speak"), tint = Color.White, modifier = Modifier.size(30.dp))
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(t("speak_title"), style = MaterialTheme.typography.titleMedium)
+                    Text(t("mic_example"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+                }
+            }
+            if (noRecognizer) Text(t("mic_missing"), color = AppColors.Missed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
         }
-        Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            IconTile(t("sugar"), Icons.Filled.Bloodtype, Modifier.weight(1f), tint = AppColors.Missed) { nav.navigate("health_entry") }
-            IconTile(t("pressure"), Icons.Filled.MonitorHeart, Modifier.weight(1f)) { nav.navigate("health_entry") }
-            IconTile(t("other"), Icons.Filled.Add, Modifier.weight(1f), tint = AppColors.Taken) { nav.navigate("health_entry") }
+
+        SectionTitle(t("measurement_tracker"))
+        // Heart rate card with ring (reference "Heart Health").
+        MetricCard(Icons.Filled.Favorite, t("pulse"), AppColors.Heart, onAdd = { nav.navigate("health_entry") }) {
+            val p = lastPulse?.pulse
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (p != null) "${Num.loc(p, lang)} bpm" else t("no_reading"),
+                        style = if (p != null) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.bodyLarge,
+                        color = if (p != null) AppColors.Text else AppColors.TextMuted)
+                    lastPulse?.let { Text(Num.date(it.date, lang, withYear = false), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted) }
+                    p?.let { Spacer(Modifier.height(6.dp)); LevelBadge(Ranges.pulse(it)) }
+                }
+                RingProgress(((p ?: 0) / 140f), Modifier.size(96.dp), fill = AppColors.Heart.copy(alpha = 0.75f)) {
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = AppColors.Heart, modifier = Modifier.size(42.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MetricCard(Icons.Filled.Bloodtype, t("sugar"), AppColors.Missed, Modifier.weight(1f), compact = true, onAdd = { nav.navigate("health_entry") }) {
+                val v = lastSugar?.sugar
+                Text(if (v != null) Num.loc(v, lang) else "—", style = MaterialTheme.typography.headlineMedium)
+                Text("mg/dL", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+                if (v != null) { Spacer(Modifier.height(6.dp)); LevelBadge(Ranges.sugar(v, SugarTag.of(lastSugar.sugarTag))) }
+            }
+            MetricCard(Icons.Filled.MonitorHeart, t("bp_short"), AppColors.Brand, Modifier.weight(1f), compact = true, onAdd = { nav.navigate("health_entry") }) {
+                val sy = lastBp?.systolic; val di = lastBp?.diastolic
+                Text(if (sy != null && di != null) "${Num.loc(sy, lang)}/${Num.loc(di, lang)}" else "—", style = MaterialTheme.typography.headlineMedium)
+                Text("mmHg", style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+                if (sy != null && di != null) { Spacer(Modifier.height(6.dp)); LevelBadge(Ranges.pressure(sy, di)) }
+            }
         }
 
         val sugar = logs.filter { it.sugar != null }.take(14).reversed()

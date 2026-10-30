@@ -83,7 +83,7 @@ class ReminderSoundService : Service() {
             val meds = DoseSchedule.groupsOn(group.date, repo.getMedicines())[group].orEmpty()
             val pending = DoseSchedule.pending(group, meds, repo.doseLogsFor(group.date))
             ReminderNotifier.build(applicationContext, group, pending, s.language) to
-                SoundHelper.uriFor(applicationContext, s.tone, s.language, group.slot, group.timing)
+                SoundHelper.uriFor(applicationContext, s.tone, s.voiceLanguage, group.slot, group.timing)
         }
         notificationId = ReminderScheduler.notificationId(group.key)
         lastNotification = notification

@@ -53,7 +53,7 @@ object ReminderNotifier {
         val text = body(meds)
         return NotificationCompat.Builder(context, NotificationChannels.DOSE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_pill)
-            .setColor(0xFF5B4FD6.toInt())
+            .setColor(0xFF47748C.toInt())
             .setContentTitle(title(group, lang))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))

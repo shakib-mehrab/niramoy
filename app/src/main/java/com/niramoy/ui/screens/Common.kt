@@ -22,7 +22,7 @@ fun Page(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val settings by vm.settings.collectAsState()
-    Column(Modifier.fillMaxSize().background(AppColors.Background)) {
+    Column(Modifier.fillMaxSize()) {
         TopBar(title, settings.language, onToggleLang = { vm.toggleLanguage() }, onBack = onBack, speakText = speak, trailing = trailing)
         ScreenColumn(content = content)
     }

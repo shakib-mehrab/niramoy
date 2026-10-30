@@ -81,6 +81,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .sortedBy { it.time }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** Day shown on Home (date strip): today by default, past days can be reviewed and corrected. */
+    val selectedDate = MutableStateFlow(Dates.today())
+
+    val dayGroups: StateFlow<List<GroupView>> = combine(selectedDate, medicines, doseLogs, settings) { d, meds, logs, s ->
+        DoseSchedule.itemsOn(d, meds, logs, s).groupBy { it.group }
+            .map { (g, items) -> GroupView(g, DoseSchedule.timeOf(g, s), items) }
+            .sortedBy { it.time }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     /** The next group with something still to take: today's first pending group, else tomorrow's first. */
     val nextGroup: StateFlow<GroupView?> = combine(todayGroups, medicines, settings, now) { groups, meds, s, t ->
         groups.firstOrNull { it.pending.isNotEmpty() && DoseSchedule.deadline(it.group, s) > t }
@@ -118,6 +127,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ----------------- SETTINGS -----------------
+
+    /** Device-only "Larger text" preference (Settings). */
+    val largeText = MutableStateFlow(com.niramoy.data.UiPrefs(application).largeText)
+    fun setLargeText(v: Boolean) { com.niramoy.data.UiPrefs(ctx).largeText = v; largeText.value = v }
 
     fun toggleLanguage() = updateSettings { it.copy(language = if (it.language == "bn") "en" else "bn") }
 
@@ -183,6 +196,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun undoDose(item: DoseItem) = viewModelScope.launch {
         repo.clearDose(item.group.date, item.medicine.id, item.group.slot)
         ReminderScheduler.rescheduleAll(ctx)
+    }
+
+    /**
+     * Change a dose to any state at any time (a mis-tap on "Taken" must be fixable):
+     * null = not marked yet. Today's alarms are rebuilt so a re-opened dose reminds again.
+     */
+    fun setDoseStatus(item: DoseItem, status: DoseStatus?) {
+        if (status == null) undoDose(item) else markDose(item, status)
+    }
+
+    /** Same, from a medicine's history list. */
+    fun setLogStatus(log: com.niramoy.data.local.DoseLogEntity, status: DoseStatus) = viewModelScope.launch {
+        val slot = Slot.of(log.slot) ?: return@launch
+        repo.logDose(log.date, log.medicineId, slot, status)
     }
 
     fun markGroupTaken(key: String) = viewModelScope.launch { ReminderReceiver.markGroup(ctx, key, DoseStatus.TAKEN) }

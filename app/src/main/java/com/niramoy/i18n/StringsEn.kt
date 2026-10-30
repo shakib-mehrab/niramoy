@@ -3,6 +3,14 @@ package com.niramoy.i18n
 /** English — short, plain words. Same keys as StringsBn. */
 object StringsEn {
     val map: Map<String, String> = mapOf(
+        // 1.1 redesign
+        "records_short" to "Records", "add_short" to "Add", "bp_short" to "Blood pressure", "sos" to "SOS", "your_schedule" to "Your schedule",
+        "no_doses_day" to "No doses on this day", "medication_tracked" to "Medication tracked", "view_all" to "View all",
+        "st_not_yet" to "Not yet", "change_status" to "Update {0}", "more_options" to "Other", "tap_to_change" to "Tap an entry to change it.",
+        "speak_title" to "Log by voice", "measurement_tracker" to "Measurements", "no_reading" to "No reading yet",
+        "large_text" to "Larger text", "large_text_hint" to "Makes all text bigger and easier to read",
+        "voice_language" to "Voice language", "tone_custom" to "My sound", "custom_pick" to "Choose my own sound",
+        "custom_change" to "Change my sound", "custom_bad" to "That file can't be played. Try an MP3 or M4A file.",
         "app_name" to "Niramoy",
         "disclaimer" to "This app only reminds you. It is not medical advice.",
         "back" to "Back", "read_aloud" to "Read aloud", "yes" to "Yes", "no" to "No", "ok" to "OK",
@@ -12,10 +20,10 @@ object StringsEn {
         "not_set" to "Not set", "dont_know" to "Don't know", "date" to "Date", "name" to "Name", "phone" to "Phone number",
         "history" to "History", "listen" to "Listen", "tomorrow" to "Tomorrow",
 
-        "tab_home" to "Today", "tab_medicines" to "Medicines", "tab_health" to "Health", "tab_records" to "Records",
+        "tab_home" to "Home", "tab_medicines" to "Medicines", "tab_health" to "Health", "tab_records" to "Records",
         "settings" to "Settings",
 
-        "auth_subtitle" to "Medicine on time, stay well",
+        "auth_subtitle" to "Your medicines, on time. Every time.",
         "auth_signin_title" to "Sign in", "auth_register_title" to "Create account",
         "auth_why" to "With an account, everything comes back even on a new phone.",
         "email" to "Email", "password" to "Password (6+ letters)",
@@ -50,19 +58,19 @@ object StringsEn {
         "perm_battery" to "No battery limits", "perm_battery_why" to "To ring even when the phone sleeps. Press “Allow”",
         "perm_fullscreen" to "Full screen alarm", "perm_fullscreen_why" to "To show big on a locked phone",
         "perm_autostart" to "Autostart", "perm_autostart_why" to "Turn on “Autostart” for this app, or the phone may close it",
-        "perm_allow" to "Turn on", "perm_done" to "Done",
+        "perm_allow" to "Turn on", "perm_done" to "All set",
         "perm_test" to "Test: alarm in 15 seconds", "perm_test_set" to "An alarm will ring in 15 seconds. You can lock the phone.",
         "test_title" to "Test: alarm works", "test_body" to "This is how medicine reminders will look.",
         "phone_setup" to "Phone setup",
 
-        "hello" to "How are you?", "hello_name" to "How are you, {0}?",
-        "next_dose" to "Next medicine", "all_done" to "All of today's medicines are taken",
-        "emergency" to "Emergency help", "today_list" to "Today's medicines",
+        "hello" to "Hello 👋", "hello_name" to "Hi, {0} 👋",
+        "next_dose" to "Next dose", "all_done" to "All of today's medicines are taken",
+        "emergency" to "Emergency", "today_list" to "Today's medicines",
         "no_meds_today" to "No medicines today", "add_medicine" to "Add medicine",
-        "taken" to "Taken", "taken_all" to "Took them all", "skip_dose" to "Skip",
+        "taken" to "Taken", "taken_all" to "Mark all as taken", "skip_dose" to "Skip",
         "skip_q" to "Skip {0} today?", "undo_mark" to "Mistake? Undo",
-        "adherence_7" to "Taken on time, last 7 days", "adherence_30" to "Taken on time, last 30 days",
-        "st_taken" to "Taken", "st_missed" to "Missed", "st_skipped" to "Skipped", "st_waiting" to "To take",
+        "adherence_7" to "Doses taken · last 7 days", "adherence_30" to "Doses taken · last 30 days",
+        "st_taken" to "Taken", "st_missed" to "Missed", "st_skipped" to "Skipped", "st_waiting" to "Pending",
 
         "phrase_morning_before" to "Take your medicine before breakfast", "phrase_morning_after" to "Take your medicine after breakfast",
         "phrase_noon_before" to "Take your medicine before lunch", "phrase_noon_after" to "Take your medicine after lunch",

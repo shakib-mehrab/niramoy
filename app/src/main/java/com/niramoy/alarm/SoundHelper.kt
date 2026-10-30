@@ -35,9 +35,26 @@ object SoundHelper {
         return if (id != 0) Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/$id") else null
     }
 
-    /** Tone -> bundled file, then beep, then the phone's alarm sound. */
-    fun uriFor(context: Context, tone: String, lang: String, slot: Slot?, timing: MealTiming?): Uri? =
-        rawUri(context, rawName(tone, lang, slot, timing))
+    /** The user's own sound (Settings > Alarm sound > Custom), copied into app storage. */
+    fun customFile(context: Context) = java.io.File(context.filesDir, "custom_tone")
+
+    fun hasCustom(context: Context) = customFile(context).let { it.exists() && it.length() > 0 }
+
+    /** Copies a picked audio file into app storage. Returns false if it can't be read. */
+    fun saveCustom(context: Context, uri: Uri): Boolean = runCatching {
+        context.contentResolver.openInputStream(uri)!!.use { input -> customFile(context).outputStream().use { input.copyTo(it) } }
+        // Make sure Android can actually play it before we accept it.
+        MediaPlayer().apply { setDataSource(context, Uri.fromFile(customFile(context))); prepare(); release() }
+        true
+    }.getOrElse { Log.w(TAG, "custom sound rejected: ${it.message}"); customFile(context).delete(); false }
+
+    /**
+     * Tone -> sound: custom file, bundled voice in [voiceLang] ("en" default, "bn"), beep,
+     * then the phone's alarm sound as the last resort.
+     */
+    fun uriFor(context: Context, tone: String, voiceLang: String, slot: Slot?, timing: MealTiming?): Uri? =
+        (if (tone == SettingsEntity.TONE_CUSTOM && hasCustom(context)) Uri.fromFile(customFile(context)) else null)
+            ?: rawUri(context, rawName(tone, voiceLang, slot, timing))
             ?: (if (tone != SettingsEntity.TONE_SYSTEM) rawUri(context, "beep") else null)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)

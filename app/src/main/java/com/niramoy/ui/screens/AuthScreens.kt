@@ -63,7 +63,7 @@ fun AuthScreen(vm: MainViewModel, onSkip: () -> Unit) {
         scope.launch { message = block()?.let { com.niramoy.i18n.Strings.t(it, lang) }; busy = false }
     }
 
-    Column(Modifier.fillMaxSize().background(AppColors.Background).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().background(AppColors.BackgroundBrush).verticalScroll(rememberScrollState())) {
         BrandHeader(t("auth_subtitle"))
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.End) {
             LanguageToggle(lang) { vm.toggleLanguage() }
@@ -74,13 +74,7 @@ fun AuthScreen(vm: MainViewModel, onSkip: () -> Unit) {
             Spacer(Modifier.height(14.dp))
             BigField(t("email"), email, { email = it }, keyboard = KeyboardType.Email)
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                value = pass, onValueChange = { pass = it },
-                label = { Text(t("password"), style = MaterialTheme.typography.bodyMedium) },
-                textStyle = MaterialTheme.typography.bodyLarge, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth().heightIn(min = TouchMin)
-            )
+            BigField(t("password"), pass, { pass = it }, keyboard = KeyboardType.Password, visualTransformation = PasswordVisualTransformation())
             Spacer(Modifier.height(16.dp))
             BigButton(
                 t(if (register) "auth_register" else "auth_signin"), Modifier.fillMaxWidth(), icon = Icons.Filled.Login,
@@ -127,7 +121,7 @@ fun AuthScreen(vm: MainViewModel, onSkip: () -> Unit) {
 
 @Composable
 fun RestoringScreen() {
-    Column(Modifier.fillMaxSize().background(AppColors.Background), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().background(AppColors.BackgroundBrush), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         CircularProgressIndicator(Modifier.size(72.dp), strokeWidth = 6.dp)
         Spacer(Modifier.height(20.dp))
         Text(t("restoring"), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.padding(24.dp))
@@ -170,7 +164,7 @@ fun OnboardingScreen(vm: MainViewModel) {
     }
     val title = t(titleKey)
 
-    Column(Modifier.fillMaxSize().background(AppColors.Background)) {
+    Column(Modifier.fillMaxSize().background(AppColors.BackgroundBrush)) {
         TopBar(tf("ob_step", com.niramoy.util.Num.loc(step + 1, lang), com.niramoy.util.Num.loc(last + 1, lang)), lang,
             onToggleLang = { vm.toggleLanguage() }, onBack = if (step > 0) ({ step-- }) else null, speakText = title)
         LinearProgressIndicator(progress = { (step + 1f) / (last + 1) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(8.dp).clip(CircleShape))
@@ -184,11 +178,11 @@ fun OnboardingScreen(vm: MainViewModel) {
             Spacer(Modifier.height(20.dp))
             when (step) {
                 0 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    BigButton("বাংলা", Modifier.fillMaxWidth(), color = if (lang == "bn") AppColors.Brand else AppColors.BrandLight.copy(alpha = 0.5f)) {
-                        vm.updateSettings { it.copy(language = "bn") }; step++
+                    BigButton("English", Modifier.fillMaxWidth(), color = if (lang == "en") AppColors.Brand else AppColors.BrandLight) {
+                        vm.updateSettings { it.copy(language = "en", voiceLanguage = "en") }; step++
                     }
-                    BigButton("English", Modifier.fillMaxWidth(), color = if (lang == "en") AppColors.Brand else AppColors.BrandLight.copy(alpha = 0.5f)) {
-                        vm.updateSettings { it.copy(language = "en") }; step++
+                    BigButton("বাংলা", Modifier.fillMaxWidth(), color = if (lang == "bn") AppColors.Brand else AppColors.BrandLight) {
+                        vm.updateSettings { it.copy(language = "bn", voiceLanguage = "bn") }; step++
                     }
                 }
                 1 -> BigField(t("name"), name, { name = it })

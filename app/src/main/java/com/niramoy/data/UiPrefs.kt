@@ -12,13 +12,23 @@ class UiPrefs(context: Context) {
         set(v) = prefs.edit().putBoolean("guest_mode", v).apply()
 
     var language: String
-        get() = prefs.getString("language", "bn") ?: "bn"
+        get() = prefs.getString("language", "en") ?: "en"
         set(v) = prefs.edit().putString("language", v).apply()
 
     /** The picture-based permission guide was finished or skipped once. */
     var permissionGuideSeen: Boolean
         get() = prefs.getBoolean("permission_guide_seen", false)
         set(v) = prefs.edit().putBoolean("permission_guide_seen", v).apply()
+
+    /** Larger text everywhere (Settings), for older eyes. Device-only. */
+    var largeText: Boolean
+        get() = prefs.getBoolean("large_text", false)
+        set(v) = prefs.edit().putBoolean("large_text", v).apply()
+
+    /** Display name of the custom reminder sound the user picked. */
+    var customToneName: String
+        get() = prefs.getString("custom_tone_name", "") ?: ""
+        set(v) = prefs.edit().putString("custom_tone_name", v).apply()
 
     /** Attach a map link to emergency WhatsApp messages. */
     var shareLocation: Boolean

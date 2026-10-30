@@ -19,34 +19,39 @@ import androidx.core.view.WindowCompat
 import com.niramoy.R
 
 /**
- * NIRAMOY tokens. Purple + white from the reference shots, pushed to high contrast for older eyes
- * (body text #1E1B3A on white ≈ 16:1, brand #4F44C9 on white ≈ 7:1). State colours are always
- * paired with an icon and a word.
+ * NIRAMOY tokens: calm powder-blue health palette (soft blue background, airy cards,
+ * slate-teal accent). Text stays dark slate on light surfaces for comfortable contrast
+ * (Text on Surface ≈ 12:1, Brand on Surface ≈ 4.8:1). State colours are always paired with an icon and a word.
  */
 object AppColors {
-    val Brand = Color(0xFF4F44C9)
-    val BrandLight = Color(0xFF6C63E6)
-    val BrandSoft = Color(0xFFE9E7FF)
+    val Brand = Color(0xFF47748C)
+    val BrandLight = Color(0xFF7FA7BC)
+    val BrandSoft = Color(0xFFDDEAF2)
     val OnBrand = Color.White
-    val Background = Color(0xFFF4F3FC)
-    val Surface = Color.White
-    val SurfaceAlt = Color(0xFFF0EFFA)
-    val Text = Color(0xFF1E1B3A)
-    val TextMuted = Color(0xFF55526E)
-    val Border = Color(0xFFD9D7EC)
+    val Background = Color(0xFFD9E7F0)
+    val BackgroundTop = Color(0xFFC7DBE8)
+    val Surface = Color(0xFFF5F9FC)
+    val SurfaceAlt = Color(0xFFE6EFF5)
+    val Text = Color(0xFF22313B)
+    val TextMuted = Color(0xFF5E717D)
+    val Border = Color(0xFFCADAE5)
 
-    val Taken = Color(0xFF1B7F3B)
-    val TakenSoft = Color(0xFFDDF3E4)
-    val Missed = Color(0xFFC62828)
-    val MissedSoft = Color(0xFFFDE2E1)
-    val Skipped = Color(0xFF8A5A00)
-    val SkippedSoft = Color(0xFFFFF0CC)
-    val Upcoming = Color(0xFF55526E)
-    val UpcomingSoft = Color(0xFFEDECF5)
-    val Emergency = Color(0xFFD32F2F)
-    val WhatsApp = Color(0xFF128C3E)
+    val Taken = Color(0xFF2E8467)
+    val TakenSoft = Color(0xFFDCF0E7)
+    val Missed = Color(0xFFC9524A)
+    val MissedSoft = Color(0xFFF8E1DE)
+    val Skipped = Color(0xFFA87518)
+    val SkippedSoft = Color(0xFFF6ECD6)
+    val Upcoming = Color(0xFF5E717D)
+    val UpcomingSoft = Color(0xFFE3ECF2)
+    val Emergency = Color(0xFFD14B45)
+    val WhatsApp = Color(0xFF1F9D55)
+    val Heart = Color(0xFFE56B6F)
 
-    val HeroBrush: Brush get() = Brush.linearGradient(listOf(BrandLight, Brand))
+    /** Page background: soft vertical wash, like the reference. */
+    val BackgroundBrush: Brush get() = Brush.verticalGradient(listOf(BackgroundTop, Background, Color(0xFFE4EEF4)))
+    /** Accent card / hero gradient. */
+    val HeroBrush: Brush get() = Brush.linearGradient(listOf(Color(0xFF6A97AE), Brand))
 }
 
 val HindSiliguri = FontFamily(
@@ -64,32 +69,36 @@ val Poppins = FontFamily(
 )
 
 /**
- * Large type scale for elderly users: body ≥ 20sp, headings ≥ 26sp. Sizes are in sp so the phone's
- * own font-size setting still scales everything.
+ * Modern type scale. [scale] is 1.0 by default and 1.2 with Settings > "Larger text" (for older eyes);
+ * sizes are in sp, so the phone's own font size setting applies on top.
  */
-fun appTypography(lang: String): Typography {
+fun appTypography(lang: String, scale: Float = 1f): Typography {
     val f = if (lang == "bn") HindSiliguri else Poppins
+    // Bangla glyphs need a little more size and line height to read as large as Latin.
+    val k = scale * if (lang == "bn") 1.08f else 1f
+    fun s(size: Float, line: Float, w: FontWeight, ls: Float = 0f) =
+        TextStyle(fontFamily = f, fontWeight = w, fontSize = (size * k).sp, lineHeight = (line * k).sp, letterSpacing = ls.sp)
     return Typography(
-        displayLarge = TextStyle(fontFamily = f, fontWeight = FontWeight.Bold, fontSize = 44.sp, lineHeight = 54.sp),
-        displayMedium = TextStyle(fontFamily = f, fontWeight = FontWeight.Bold, fontSize = 38.sp, lineHeight = 48.sp),
-        displaySmall = TextStyle(fontFamily = f, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 42.sp),
-        headlineLarge = TextStyle(fontFamily = f, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 40.sp),
-        headlineMedium = TextStyle(fontFamily = f, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, lineHeight = 38.sp),
-        headlineSmall = TextStyle(fontFamily = f, fontWeight = FontWeight.SemiBold, fontSize = 26.sp, lineHeight = 36.sp),
-        titleLarge = TextStyle(fontFamily = f, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 32.sp),
-        titleMedium = TextStyle(fontFamily = f, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 30.sp),
-        titleSmall = TextStyle(fontFamily = f, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 28.sp),
-        bodyLarge = TextStyle(fontFamily = f, fontWeight = FontWeight.Normal, fontSize = 21.sp, lineHeight = 30.sp),
-        bodyMedium = TextStyle(fontFamily = f, fontWeight = FontWeight.Normal, fontSize = 20.sp, lineHeight = 28.sp),
-        bodySmall = TextStyle(fontFamily = f, fontWeight = FontWeight.Normal, fontSize = 18.sp, lineHeight = 26.sp),
-        labelLarge = TextStyle(fontFamily = f, fontWeight = FontWeight.SemiBold, fontSize = 21.sp, lineHeight = 28.sp),
-        labelMedium = TextStyle(fontFamily = f, fontWeight = FontWeight.Medium, fontSize = 18.sp, lineHeight = 24.sp),
-        labelSmall = TextStyle(fontFamily = f, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp)
+        displayLarge = s(40f, 48f, FontWeight.SemiBold, -0.5f),
+        displayMedium = s(34f, 42f, FontWeight.SemiBold, -0.4f),
+        displaySmall = s(28f, 36f, FontWeight.SemiBold, -0.3f),
+        headlineLarge = s(26f, 34f, FontWeight.SemiBold, -0.2f),
+        headlineMedium = s(23f, 31f, FontWeight.SemiBold),
+        headlineSmall = s(21f, 29f, FontWeight.SemiBold),
+        titleLarge = s(19f, 27f, FontWeight.SemiBold),
+        titleMedium = s(17f, 25f, FontWeight.Medium),
+        titleSmall = s(15f, 22f, FontWeight.Medium),
+        bodyLarge = s(16f, 24f, FontWeight.Normal),
+        bodyMedium = s(15f, 22f, FontWeight.Normal),
+        bodySmall = s(13f, 19f, FontWeight.Normal),
+        labelLarge = s(15f, 21f, FontWeight.SemiBold),
+        labelMedium = s(13f, 18f, FontWeight.Medium),
+        labelSmall = s(12f, 16f, FontWeight.Medium, 0.2f)
     )
 }
 
 @Composable
-fun NiramoyTheme(lang: String, content: @Composable () -> Unit) {
+fun NiramoyTheme(lang: String, textScale: Float = 1f, content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -108,9 +117,10 @@ fun NiramoyTheme(lang: String, content: @Composable () -> Unit) {
             background = AppColors.Background, onBackground = AppColors.Text,
             surface = AppColors.Surface, onSurface = AppColors.Text,
             surfaceVariant = AppColors.SurfaceAlt, onSurfaceVariant = AppColors.TextMuted,
+            surfaceContainerHigh = AppColors.Surface, surfaceContainerHighest = AppColors.SurfaceAlt,
             outline = AppColors.Border, error = AppColors.Missed
         ),
-        typography = remember(lang) { appTypography(lang) },
+        typography = remember(lang, textScale) { appTypography(lang, textScale) },
         content = content
     )
 }

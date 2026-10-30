@@ -38,6 +38,24 @@ fun SettingsScreen(vm: MainViewModel, nav: NavController, onSignedOut: () -> Uni
     var message by remember { mutableStateOf<String?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     DisposableEffect(Unit) { onDispose { runCatching { player?.release() } } }
+    val largeText by vm.largeText.collectAsState()
+    var customName by remember { mutableStateOf(UiPrefs(context).customToneName) }
+    // Pick any audio file as the reminder sound; it is copied into the app and checked that it plays.
+    val pickSound = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            if (SoundHelper.saveCustom(context, uri)) {
+                val name = runCatching {
+                    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                        val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (i >= 0 && c.moveToFirst()) c.getString(i) else null
+                    }
+                }.getOrNull().orEmpty().substringBeforeLast('.').take(24)
+                UiPrefs(context).customToneName = name
+                customName = name
+                vm.updateSettings { it.copy(tone = SettingsEntity.TONE_CUSTOM) }
+            } else message = Strings.t("custom_bad", lang)
+        }
+    }
 
     Page(vm, t("settings"), onBack = { nav.popBackStack() }) {
         // ---- account
@@ -79,9 +97,19 @@ fun SettingsScreen(vm: MainViewModel, nav: NavController, onSignedOut: () -> Uni
 
         // ---- language
         SectionTitle(t("language"))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ChoiceChip("বাংলা", lang == "bn", Modifier.weight(1f)) { vm.updateSettings { it.copy(language = "bn") } }
-            ChoiceChip("English", lang == "en", Modifier.weight(1f)) { vm.updateSettings { it.copy(language = "en") } }
+        AppCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ChoiceChip("English", lang == "en", Modifier.weight(1f)) { vm.updateSettings { it.copy(language = "en") } }
+                ChoiceChip("বাংলা", lang == "bn", Modifier.weight(1f)) { vm.updateSettings { it.copy(language = "bn") } }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text(t("large_text"), style = MaterialTheme.typography.titleSmall)
+                    Text(t("large_text_hint"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+                }
+                Switch(largeText, { vm.setLargeText(it) })
+            }
         }
 
         // ---- routine
@@ -143,15 +171,31 @@ fun SettingsScreen(vm: MainViewModel, nav: NavController, onSignedOut: () -> Uni
         // ---- tone
         SectionTitle(t("tone"))
         AppCard {
+            Text(t("voice_language"), style = MaterialTheme.typography.titleSmall, color = AppColors.TextMuted)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)) {
+                ChoiceChip("English", s.voiceLanguage == "en", Modifier.weight(1f)) { vm.updateSettings { it.copy(voiceLanguage = "en") } }
+                ChoiceChip("বাংলা", s.voiceLanguage == "bn", Modifier.weight(1f)) { vm.updateSettings { it.copy(voiceLanguage = "bn") } }
+            }
             SettingsEntity.TONES.forEach { tone ->
+                val isCustom = tone == SettingsEntity.TONE_CUSTOM
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ChoiceChip(t("tone_$tone"), s.tone == tone, Modifier.weight(1f)) { vm.updateSettings { it.copy(tone = tone) } }
+                    ChoiceChip(
+                        if (isCustom && customName.isNotBlank()) "${t("tone_custom")}: $customName" else t("tone_$tone"),
+                        s.tone == tone, Modifier.weight(1f)
+                    ) {
+                        if (isCustom && !SoundHelper.hasCustom(context)) pickSound.launch(arrayOf("audio/*"))
+                        else vm.updateSettings { it.copy(tone = tone) }
+                    }
                     Spacer(Modifier.width(8.dp))
                     RoundIconButton(Icons.Filled.PlayArrow, t("listen"), {
                         runCatching { player?.release() }
-                        player = SoundHelper.preview(context, SoundHelper.uriFor(context, tone, lang, Slot.MORNING, MealTiming.AFTER))
+                        player = SoundHelper.preview(context, SoundHelper.uriFor(context, tone, s.voiceLanguage, Slot.MORNING, MealTiming.AFTER))
                     })
                 }
+            }
+            Spacer(Modifier.height(6.dp))
+            BigOutlineButton(t(if (SoundHelper.hasCustom(context)) "custom_change" else "custom_pick"), Modifier.fillMaxWidth(), icon = Icons.Filled.LibraryMusic) {
+                pickSound.launch(arrayOf("audio/*"))
             }
             if (!SoundHelper.hasVoiceFiles(context)) Text(t("voice_missing"), style = MaterialTheme.typography.bodySmall, color = AppColors.Skipped)
         }

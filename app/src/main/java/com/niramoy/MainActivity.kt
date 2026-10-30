@@ -5,6 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,7 +47,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val vm: MainViewModel = viewModel()
             val settings by vm.settings.collectAsState()
-            NiramoyTheme(lang = settings.language) {
+            val largeText by vm.largeText.collectAsState()
+            NiramoyTheme(lang = settings.language, textScale = if (largeText) 1.18f else 1f) {
                 CompositionLocalProvider(LocalLang provides settings.language) {
                     NiramoyApp(vm)
                 }
@@ -56,8 +62,8 @@ private data class Tab(val route: String, val labelKey: String, val on: ImageVec
 private val TABS = listOf(
     Tab("home", "tab_home", Icons.Filled.Home, Icons.Outlined.Home),
     Tab("medicines", "tab_medicines", Icons.Filled.Medication, Icons.Outlined.Medication),
-    Tab("health", "tab_health", Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder),
-    Tab("records", "tab_records", Icons.Filled.Folder, Icons.Outlined.Folder)
+    Tab("health", "tab_health", Icons.Filled.MonitorHeart, Icons.Outlined.MonitorHeart),
+    Tab("records", "tab_records", Icons.Filled.Person, Icons.Outlined.Person)
 )
 
 private fun NavHostController.navigateTab(route: String) = navigate(route) {
@@ -100,11 +106,14 @@ private fun MainScaffold(vm: MainViewModel, onSignedOut: () -> Unit) {
     val route = back?.destination?.route ?: "home"
     val showTabs = TABS.any { it.route == route }
 
-    Scaffold(
-        containerColor = AppColors.Background,
-        bottomBar = { if (showTabs) BottomTabs(route) { nav.navigateTab(it) } }
-    ) { pad ->
-        NavHost(nav, startDestination = "home", modifier = Modifier.padding(bottom = pad.calculateBottomPadding())) {
+    Box(Modifier.fillMaxSize().background(AppColors.BackgroundBrush)) {
+        // Content scrolls under the floating bar; screens leave this much space at their end.
+        CompositionLocalProvider(com.niramoy.ui.components.LocalBottomSpace provides if (showTabs) 120.dp else 32.dp) {
+        NavHost(nav, startDestination = "home", modifier = Modifier.fillMaxSize().imePadding(),
+            enterTransition = { fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 30 } },
+            exitTransition = { fadeOut(tween(150)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = { fadeOut(tween(150)) }) {
             composable("home") { HomeScreen(vm, nav) }
             composable("medicines") { MedicinesScreen(vm, nav) }
             composable("health") { HealthScreen(vm, nav) }
@@ -132,30 +141,47 @@ private fun MainScaffold(vm: MainViewModel, onSignedOut: () -> Unit) {
             composable("settings") { SettingsScreen(vm, nav, onSignedOut) }
             composable("permissions") { PermissionGuideScreen(vm, onDone = { nav.popBackStack() }, onBack = { nav.popBackStack() }) }
         }
+        }
+        AnimatedVisibility(
+            visible = showTabs,
+            enter = fadeIn() + slideInVertically { it }, exit = fadeOut() + slideOutVertically { it },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) { FloatingNav(route) { nav.navigateTab(it) } }
     }
 }
 
-/** Four big tabs: large icon + word, the selected one filled purple. */
+/** Floating pill bar with round icon buttons (reference style); the selected tab shows its label. */
 @Composable
-private fun BottomTabs(current: String, onSelect: (String) -> Unit) {
-    Surface(color = AppColors.Surface, shadowElevation = 12.dp) {
-        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 6.dp, vertical = 8.dp)) {
-            TABS.forEach { tab ->
-                val on = current == tab.route
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 72.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (on) AppColors.BrandSoft else AppColors.Surface)
-                        .clickable(role = Role.Tab) { onSelect(tab.route) }
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(if (on) tab.on else tab.off, contentDescription = null, tint = if (on) AppColors.Brand else AppColors.TextMuted, modifier = Modifier.size(32.dp))
-                    Text(t(tab.labelKey), style = MaterialTheme.typography.labelMedium, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                        color = if (on) AppColors.Brand else AppColors.TextMuted, maxLines = 1)
+private fun FloatingNav(current: String, onSelect: (String) -> Unit) {
+    Row(
+        Modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+            .fillMaxWidth()
+            .shadow(14.dp, CircleShape, spotColor = AppColors.Brand.copy(alpha = 0.25f))
+            .clip(CircleShape)
+            .background(AppColors.Surface)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TABS.forEach { tab ->
+            val on = current == tab.route
+            val label = t(tab.labelKey)
+            Row(
+                Modifier
+                    .height(52.dp)
+                    .clip(CircleShape)
+                    .background(if (on) AppColors.Brand else AppColors.SurfaceAlt)
+                    .clickable(role = Role.Tab, onClickLabel = label) { onSelect(tab.route) }
+                    .animateContentSize()
+                    .padding(horizontal = if (on) 16.dp else 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(if (on) tab.on else tab.off, contentDescription = label, tint = if (on) Color.White else AppColors.TextMuted, modifier = Modifier.size(24.dp))
+                if (on) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(label, style = MaterialTheme.typography.labelLarge, color = Color.White, maxLines = 1)
                 }
             }
         }
