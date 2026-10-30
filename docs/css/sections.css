@@ -1,0 +1,78 @@
+/* =====================================================================
+   Sections v2: hadith carousel · feature story-scroll · screenshot railway · rating
+   (loaded after style.css; uses its tokens)
+   ===================================================================== */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Feature story-scroll (problem bubble → app reply, one at a time) ---------- */
+.story-scroll { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: clamp(32px, 6vw, 88px); margin-top: 20px; }
+.story-scroll__phone { position: sticky; top: 88px; align-self: start; display: grid; justify-items: center; gap: 12px; padding-top: 2vh; }
+.story-scroll__phone .device { --w: min(300px, calc((100vh - 170px) * .46)); }
+.story-scroll__screens { position: relative; background: var(--tile); }
+.story-scroll__screens img { position: absolute; inset: 0; opacity: 0; transform: scale(1.03); transition: opacity .6s var(--ease), transform .8s var(--ease); }
+.story-scroll__screens img.is-on { opacity: 1; transform: none; }
+.story-scroll__count { font-weight: 600; color: var(--ink-2); letter-spacing: .1em; margin: 0; }
+.story-scroll__count span { color: var(--brand); font-size: 1.4rem; }
+.story-scroll__steps { list-style: none; margin: 0; padding: 0 0 0 34px; position: relative; }
+.story-scroll__steps::before, .story-scroll__steps::after { content: ""; position: absolute; left: 8px; top: 0; width: 2px; border-radius: 2px; }
+.story-scroll__steps::before { bottom: 0; background: var(--line); }
+.story-scroll__steps::after { height: calc(var(--p, 0) * 100%); background: var(--amber); }
+.chat { min-height: 78vh; display: flex; flex-direction: column; justify-content: center; gap: 18px; position: relative; opacity: .25; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.chat::before { content: ""; position: absolute; left: -34px; top: 50%; width: 18px; height: 18px; border-radius: 50%; translate: 0 -50%; background: var(--bg); box-shadow: inset 0 0 0 2px var(--line); transition: box-shadow .4s, background-color .4s; }
+.chat.is-active { opacity: 1; transform: none; }
+.chat.is-past { opacity: .4; transform: none; }
+.chat.is-active::before, .chat.is-past::before { background: var(--amber); box-shadow: 0 0 0 6px color-mix(in srgb, var(--amber) 25%, transparent); }
+.chat__ask {
+  align-self: flex-end; max-width: 440px; margin: 0;
+  background: var(--tile-2); padding: 14px 20px 16px; border-radius: 22px 22px 6px 22px;
+  font-size: clamp(1.15rem, 2.2vw, 1.4rem); font-weight: 500; line-height: 1.5;
+}
+.chat__who { display: block; font-size: .78rem; font-weight: 600; letter-spacing: .06em; color: var(--ink-2); margin-bottom: 2px; }
+.chat__reply { display: flex; gap: 12px; align-items: flex-start; max-width: 560px; }
+.chat__avatar img { border-radius: 12px; }
+.chat__reply > div { background: var(--surface); box-shadow: var(--shadow); padding: 18px 22px 20px; border-radius: 6px 22px 22px 22px; }
+.chat__reply h3 { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; margin-bottom: 8px; }
+.chat__reply h3 svg { color: var(--brand); width: 22px; height: 22px; }
+.chat__reply p { margin: 0; color: var(--ink-2); font-size: 1.05rem; }
+.chat__shot { display: none; }
+
+/* ---------- Screenshot railway: vertical scroll pulls the coaches in, one by one ---------- */
+.rail { position: relative; height: 360vh; }
+.rail__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding: 76px 0 16px; }
+.rail__sticky .section-lead { margin-bottom: 18px; }
+.rail__window { position: relative; padding-top: 10px; }
+.rail__train { list-style: none; margin: 0; padding: 0 0 0 100vw; display: flex; gap: clamp(28px, 4vw, 56px); align-items: flex-end; will-change: transform; }
+.rail__car { flex: 0 0 auto; width: min(clamp(170px, 17vw, 220px), calc((100vh - 400px) * .46)); text-align: center; transform-origin: 50% 100%; will-change: transform, opacity; }
+.rail__car img { width: 100%; height: auto; border-radius: 26px; box-shadow: var(--shadow); background: var(--tile); }
+.rail__car span { display: inline-block; margin-top: 10px; font-weight: 600; color: var(--ink-2); font-size: .95rem; }
+.rail__track {
+  height: 18px; margin-top: 14px; opacity: .75;
+  background:
+    linear-gradient(var(--skyline), var(--skyline)) 0 3px / 100% 3px no-repeat,
+    linear-gradient(var(--skyline), var(--skyline)) 0 12px / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--skyline) 70%, transparent) 0 6px, transparent 6px 34px);
+}
+.rail__progress { flex: 0 0 auto; width: min(320px, 60vw); height: 4px; border-radius: 2px; background: var(--line); margin: 16px auto 0; overflow: hidden; }
+.rail__progress span { display: block; height: 100%; width: 100%; background: var(--amber); transform: scaleX(0); transform-origin: left; }
+/* Reduced motion / very short screens: a calm static grid instead */
+.rail.is-static { height: auto; }
+.rail.is-static .rail__sticky { position: static; height: auto; padding: clamp(64px, 10vw, 112px) 0; }
+.rail.is-static .rail__train { padding: 0 16px; flex-wrap: wrap; justify-content: center; transform: none !important; }
+.rail.is-static .rail__car { transform: none !important; opacity: 1 !important; }
+.rail.is-static .rail__track, .rail.is-static .rail__progress { display: none; }
+
+@media (max-width: 960px) {
+  .story-scroll { grid-template-columns: 1fr; }
+  .story-scroll__phone { display: none; }
+  .story-scroll__steps { padding-left: 28px; }
+  .chat { min-height: auto; padding: 26px 0; opacity: 1; transform: none; }
+  .chat::before { left: -28px; top: 46px; translate: 0; }
+  .chat__ask { align-self: stretch; }
+  .chat__shot { display: block; width: 190px; border-radius: 22px; box-shadow: var(--shadow); margin: 4px 0 0 48px; }
+}
+@media (max-width: 620px) {
+  .rail { height: 320vh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat { opacity: 1; transform: none; }
+}
