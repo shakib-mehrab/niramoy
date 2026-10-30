@@ -80,7 +80,9 @@ jobs:
           CODE=$(jq -r '.elements[0].versionCode' "$META")
           NAME=$(jq -r '.elements[0].versionName' "$META")
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
-          NOTES=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP/,$d')
+          # actions/checkout turns the annotated tag into a lightweight one; fetch the real tag to read its message.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          NOTES=$(git tag -l --format='%(contents:subject)%0a%(contents:body)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP/,$d' | sed '/^Co-Authored-By/d')
           MIN=$(cat update/min-version-code.txt 2>/dev/null || echo 0)
           jq -n --argjson code "$CODE" --arg name "$NAME" --arg sha "$SHA" --arg notes "$NOTES" --argjson min "$MIN" \
             --arg url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${APK}" \

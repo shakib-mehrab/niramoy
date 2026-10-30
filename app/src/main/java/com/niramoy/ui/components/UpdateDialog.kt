@@ -1,6 +1,8 @@
 package com.niramoy.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +47,8 @@ fun UpdateDialog(state: UpdateUiState, onDownload: () -> Unit, onInstall: () -> 
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = !mandatory)) {
         Column(
-            Modifier.padding(20.dp).fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(AppColors.Surface).padding(24.dp),
+            Modifier.padding(20.dp).fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(AppColors.Surface)
+                .verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(Modifier.size(84.dp).clip(CircleShape).background(AppColors.BrandSoft), contentAlignment = Alignment.Center) {
@@ -62,7 +65,9 @@ fun UpdateDialog(state: UpdateUiState, onDownload: () -> Unit, onInstall: () -> 
             manifest?.let {
                 Text("${t("upd_version")} ${Num.loc(it.versionName, lang)}", style = MaterialTheme.typography.bodyLarge, color = AppColors.TextMuted)
                 Spacer(Modifier.height(8.dp))
-                Text(it.notes.ifBlank { t("upd_default_notes") }, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                // Long notes scroll inside a capped box so the buttons always stay reachable.
+                Text(it.notes.ifBlank { t("upd_default_notes") }, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
+                    modifier = Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState()))
             }
             Spacer(Modifier.height(18.dp))
             when (state) {

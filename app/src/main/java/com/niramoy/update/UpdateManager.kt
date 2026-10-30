@@ -1,6 +1,5 @@
 package com.niramoy.update
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -12,7 +11,6 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import com.niramoy.BuildConfig
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -114,43 +112,58 @@ object UpdateManager {
         }
     }
 
+    /** App-internal folder (always available, no storage permission; shared with the installer via FileProvider). */
     private fun apkFile(context: Context, m: Manifest): File {
-        val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "updates").apply { mkdirs() }
+        val dir = File(context.filesDir, "updates").apply { mkdirs() }
         dir.listFiles()?.forEach { if (it.name != "niramoy-${m.versionCode}.apk") it.delete() }
         return File(dir, "niramoy-${m.versionCode}.apk")
     }
 
-    /** Downloads with DownloadManager (shows a system progress notification) and verifies the file. */
+    /**
+     * Downloads over HTTPS straight into app storage (follows GitHub's redirect to its asset host),
+     * reporting progress 0..1, then verifies the file. No DownloadManager / external storage needed.
+     */
     suspend fun download(context: Context, m: Manifest, onProgress: (Float) -> Unit): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val file = apkFile(context, m)
             if (file.exists() && verify(context, file, m).isSuccess) return@runCatching file
             file.delete()
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val id = dm.enqueue(
-                DownloadManager.Request(Uri.parse(m.apkUrl))
-                    .setTitle("নিরাময় ${m.versionName}")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-                    .setDestinationUri(Uri.fromFile(file))
-            )
+            var url = URL(m.apkUrl)
+            var conn: HttpURLConnection
+            var hops = 0
             while (true) {
-                delay(400)
-                dm.query(DownloadManager.Query().setFilterById(id))?.use { c ->
-                    if (!c.moveToFirst()) throw IllegalStateException("cancelled")
-                    val status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                    val done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                    val total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                    if (total > 0) onProgress((done.toFloat() / total).coerceIn(0f, 1f))
-                    when (status) {
-                        DownloadManager.STATUS_SUCCESSFUL -> {
-                            verify(context, file, m).getOrThrow()
-                            return@runCatching file
-                        }
-                        DownloadManager.STATUS_FAILED -> throw IllegalStateException("download failed")
-                    }
-                } ?: throw IllegalStateException("download unavailable")
+                conn = (url.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 20_000; readTimeout = 60_000; instanceFollowRedirects = false
+                }
+                val code = conn.responseCode
+                if (code in 300..399 && hops++ < 5) {
+                    val next = conn.getHeaderField("Location") ?: throw IllegalStateException("bad redirect")
+                    conn.disconnect()
+                    if (!isAllowedUrl(next)) throw SecurityException("redirect host not allowed")
+                    url = URL(next); continue
+                }
+                if (code != 200) throw IllegalStateException("HTTP $code")
+                break
             }
-            @Suppress("UNREACHABLE_CODE") file
+            val total = conn.contentLengthLong
+            val tmp = File(file.path + ".part")
+            conn.inputStream.use { input ->
+                tmp.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    var done = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        done += n
+                        if (total > 0) onProgress((done.toFloat() / total).coerceIn(0f, 1f))
+                    }
+                }
+            }
+            conn.disconnect()
+            if (!tmp.renameTo(file)) throw IllegalStateException("could not save")
+            verify(context, file, m).getOrThrow()
+            file
         }
     }
 
