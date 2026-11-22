@@ -57,12 +57,23 @@ fun AuthScreen(vm: MainViewModel, onSkip: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var confirmSkip by remember { mutableStateOf(false) }
+    var joining by remember { mutableStateOf(false) }
 
     fun run(block: suspend () -> String?) {
         busy = true; message = null
         scope.launch { message = block()?.let { com.niramoy.i18n.Strings.t(it, lang) }; busy = false }
     }
 
+    if (joining) {
+        // A family member who only follows someone: join with the code, no account.
+        Column(Modifier.fillMaxSize().background(AppColors.BackgroundBrush).verticalScroll(rememberScrollState())) {
+            BrandHeader(t("auth_subtitle"))
+            Column(Modifier.padding(20.dp)) {
+                JoinFamilyForm(vm, followerOnly = true, onJoined = {}, onCancel = { joining = false })
+            }
+        }
+        return
+    }
     Column(Modifier.fillMaxSize().background(AppColors.BackgroundBrush).verticalScroll(rememberScrollState())) {
         BrandHeader(t("auth_subtitle"))
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.End) {
@@ -112,6 +123,9 @@ fun AuthScreen(vm: MainViewModel, onSkip: () -> Unit) {
                 modifier = Modifier.heightIn(min = TouchMin)
             ) { Text(t("auth_forgot"), style = MaterialTheme.typography.bodyLarge) }
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
+            BigButton(t("auth_join_family"), Modifier.fillMaxWidth(), icon = Icons.Filled.Groups, color = AppColors.BrandLight) { joining = true }
+            Text(t("auth_join_family_hint"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted,
+                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp))
             BigOutlineButton(t("auth_skip"), Modifier.fillMaxWidth(), icon = Icons.Filled.PhoneAndroid, color = AppColors.TextMuted) { confirmSkip = true }
             Spacer(Modifier.height(32.dp))
         }

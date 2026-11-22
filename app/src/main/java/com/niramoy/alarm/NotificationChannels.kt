@@ -13,6 +13,8 @@ import android.os.Build
 object NotificationChannels {
     const val DOSE_CHANNEL_ID = "niramoy_doses_v1"
     const val VISIT_CHANNEL_ID = "niramoy_visits_v1"
+    const val STOCK_CHANNEL_ID = "niramoy_stock_v1"
+    const val FAMILY_CHANNEL_ID = "niramoy_family_v1"
 
     fun ensureCreated(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -29,6 +31,12 @@ object NotificationChannels {
                 },
                 NotificationChannel(VISIT_CHANNEL_ID, "ডাক্তার দেখানো / Doctor visit", NotificationManager.IMPORTANCE_HIGH).apply {
                     description = "ডাক্তারের কাছে যাওয়ার দিন"
+                },
+                NotificationChannel(STOCK_CHANNEL_ID, "ওষুধ শেষ হয়ে আসছে / Running low", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "When a medicine is about to run out"
+                },
+                NotificationChannel(FAMILY_CHANNEL_ID, "পরিবার / Family", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Messages and alerts from your family space"
                 }
             )
         )

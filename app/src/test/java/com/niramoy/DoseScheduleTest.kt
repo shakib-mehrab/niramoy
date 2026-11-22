@@ -66,6 +66,15 @@ class DoseScheduleTest {
         assertNull(DoseSchedule.adherence(emptyList(), listOf("2026-10-29")))
     }
 
+    @Test fun stockDaysLeftAndLowLine() {
+        val m = med("a", "morning,night").copy(stock = 10.0, perDose = 1.0, lowStockAt = 3.0)
+        assertEquals(5, m.daysLeft)                       // 2 doses a day
+        assertFalse(m.isLowStock)
+        assertTrue(m.copy(stock = 3.0).isLowStock)        // at the line counts as low
+        assertEquals(10, m.copy(perDose = 0.5).daysLeft)  // half tablets last twice as long
+        assertNull(med("b", "morning").daysLeft)          // not tracked
+    }
+
     @Test fun groupKeyRoundTrips() {
         val g = DoseGroup("2026-10-29", Slot.NOON, MealTiming.BEFORE)
         assertEquals(g, DoseGroup.parse(g.key))

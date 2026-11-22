@@ -53,6 +53,7 @@ fun HomeScreen(vm: MainViewModel, nav: NavController) {
     val adherence by vm.adherence7.collectAsState()
     val now by vm.now.collectAsState()
     val meds by vm.medicines.collectAsState()
+    val family by vm.family.collectAsState()
     val lang = s.language
     var editing by remember { mutableStateOf<DoseItem?>(null) }
 
@@ -95,8 +96,16 @@ fun HomeScreen(vm: MainViewModel, nav: NavController) {
 
             if (groups.isEmpty()) {
                 AppCard {
-                    EmptyState(Icons.Filled.Medication, t(if (meds.isEmpty()) "no_meds" else "no_doses_day"))
-                    if (meds.isEmpty()) BigButton(t("add_medicine"), Modifier.fillMaxWidth(), icon = Icons.Filled.Add) { nav.navigate("med_edit") }
+                    if (meds.isEmpty() && family != null) {
+                        // This phone follows family members: point to them instead of an empty schedule.
+                        EmptyState(Icons.Filled.Groups, tf("following_family", family!!.name))
+                        BigButton(t("open_family"), Modifier.fillMaxWidth(), icon = Icons.Filled.Groups) { nav.navigate("family") }
+                        Spacer(Modifier.height(8.dp))
+                        BigOutlineButton(t("add_medicine"), Modifier.fillMaxWidth(), icon = Icons.Filled.Add) { nav.navigate("med_edit") }
+                    } else {
+                        EmptyState(Icons.Filled.Medication, t(if (meds.isEmpty()) "no_meds" else "no_doses_day"))
+                        if (meds.isEmpty()) BigButton(t("add_medicine"), Modifier.fillMaxWidth(), icon = Icons.Filled.Add) { nav.navigate("med_edit") }
+                    }
                 }
             }
             groups.forEach { g ->

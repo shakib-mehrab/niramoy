@@ -75,6 +75,28 @@ object FileStorage {
         }.getOrElse { Log.w(TAG, "download failed: ${it.message}"); false }
     }
 
+    /**
+     * A signed, read-only link to one of the user's own files (valid ~10 years), stored on the record
+     * so family members who may see it can open it. Supabase only lets each user into their own folder.
+     */
+    suspend fun signedUrl(path: String, token: String): String? = withContext(Dispatchers.IO) {
+        if (!isConfigured) return@withContext null
+        runCatching {
+            val base = BuildConfig.SUPABASE_URL.trimEnd('/')
+            val c = open("$base/storage/v1/object/sign/${BuildConfig.SUPABASE_BUCKET}/$path", "POST", token).apply {
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+            }
+            c.outputStream.use { it.write("{\"expiresIn\":315360000}".toByteArray()) }
+            val ok = c.responseCode in 200..299
+            val body = (if (ok) c.inputStream else c.errorStream)?.bufferedReader()?.readText().orEmpty()
+            c.disconnect()
+            if (!ok) return@runCatching null
+            val rel = org.json.JSONObject(body).optString("signedURL").ifBlank { return@runCatching null }
+            "$base/storage/v1" + (if (rel.startsWith("/")) rel else "/$rel")
+        }.getOrNull()
+    }
+
     suspend fun delete(path: String, token: String?) = withContext(Dispatchers.IO) {
         if (!isConfigured || token == null) return@withContext
         runCatching { open(objectUrl(path), "DELETE", token).apply { responseCode; disconnect() } }
@@ -141,6 +163,10 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             val ext = if (r.mime == "application/pdf") "pdf" else "jpg"
             val path = "$uid/${r.id}.$ext"
             if (FileStorage.upload(f, path, r.mime, token)) repo.markUploaded(r.id, path) else failed = true
+        }
+        // Family share links (also back-fills files uploaded before this feature).
+        for (r in repo.unsharedRecords()) {
+            FileStorage.signedUrl(r.remotePath, token)?.let { repo.setShareUrl(r.id, it) }
         }
         return if (failed) Result.retry() else Result.success()
     }

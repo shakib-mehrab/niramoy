@@ -170,7 +170,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     notes = d.notes.trim(),
                     active = existing?.active ?: true,
                     createdAt = existing?.createdAt ?: now,
-                    updatedAt = now
+                    updatedAt = now,
+                    stock = d.stock,
+                    perDose = d.perDose,
+                    lowStockAt = existing?.lowStockAt ?: 3.0,
+                    // Editing the count re-arms the alert when it is above the line again.
+                    lowStockNotified = (existing?.lowStockNotified ?: false) && (d.stock ?: Double.MAX_VALUE) <= (existing?.lowStockAt ?: 3.0)
                 )
             )
         }
@@ -178,10 +183,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveDrafts(list: List<MedicineDraft>) = list.filter { it.name.isNotBlank() && it.slots.isNotEmpty() }.forEach { saveDraft(it) }
 
+    fun addStock(id: String, amount: Double) = viewModelScope.launch { repo.addStock(id, amount) }
+
     fun setMedicineActive(id: String, active: Boolean) = viewModelScope.launch { repo.setMedicineActive(id, active) }
     fun deleteMedicine(id: String) = viewModelScope.launch { repo.deleteMedicine(id) }
 
-    fun draftOf(m: MedicineEntity) = MedicineDraft(m.name, m.dose, m.slotSet, m.timing, m.duration, if (m.courseDays > 0) m.courseDays else 7, m.notes)
+    fun draftOf(m: MedicineEntity) = MedicineDraft(m.name, m.dose, m.slotSet, m.timing, m.duration, if (m.courseDays > 0) m.courseDays else 7, m.notes, m.stock, m.perDose)
 
     // ----------------- DOSES -----------------
 
@@ -256,6 +263,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val dest = File(FileStorage.recordsDir(ctx), r.remotePath.substringAfterLast('/'))
         if (FileStorage.download(r.remotePath, dest, token)) { repo.setRecordLocalPath(r.id, dest.absolutePath); dest } else null
     }
+
+    // ----------------- FAMILY -----------------
+
+    private val familyRepo = com.niramoy.data.FamilyRepository.getInstance(application)
+    val family = familyRepo.family
+    val familyMembers = familyRepo.members
+    val familyLoading = familyRepo.loading
+    val myUid: String? get() = familyRepo.myUid
+    val isAnonymous: Boolean get() = repo.isAnonymous
+
+    /** null = success, otherwise a string key ("family_*" / "err_*"). */
+    private fun Result<Unit>.familyCode(): String? =
+        exceptionOrNull()?.let { (it as? com.niramoy.data.FamilyRepository.FamilyError)?.code ?: "err_generic" }
+
+    suspend fun createFamily(familyName: String, myName: String) = familyRepo.create(familyName, myName).familyCode()
+
+    /** Joins with a code; a phone that only follows someone needs no account and no onboarding. */
+    suspend fun joinFamily(code: String, myName: String, share: Boolean, followerOnly: Boolean): String? {
+        val err = familyRepo.join(code, myName, share).familyCode()
+        if (err == null && followerOnly) repo.updateSettings { it.copy(name = myName.trim(), onboarded = true) }
+        if (err == null) com.niramoy.data.FamilyWorker.schedule(ctx)
+        return err
+    }
+
+    suspend fun leaveFamily() = familyRepo.leave().familyCode()
+    suspend fun removeFamilyMember(uid: String) = familyRepo.remove(uid).familyCode()
+    suspend fun setFamilySharing(on: Boolean) = familyRepo.setSharing(on).familyCode()
+    suspend fun nudge(toUid: String, m: MedicineEntity, type: String) = familyRepo.nudge(toUid, m, type).familyCode()
+    suspend fun addStockFor(toUid: String, m: MedicineEntity, amount: Double) = familyRepo.addStockFor(toUid, m, amount).familyCode()
+    fun observeMember(uid: String) = familyRepo.observeMember(uid)
+    suspend fun linkGoogle(idToken: String) = repo.linkGoogle(idToken).errorCode()
 
     // ----------------- UPDATES -----------------
 

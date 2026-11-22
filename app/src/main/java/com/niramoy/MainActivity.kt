@@ -63,7 +63,7 @@ private val TABS = listOf(
     Tab("home", "tab_home", Icons.Filled.Home, Icons.Outlined.Home),
     Tab("medicines", "tab_medicines", Icons.Filled.Medication, Icons.Outlined.Medication),
     Tab("health", "tab_health", Icons.Filled.MonitorHeart, Icons.Outlined.MonitorHeart),
-    Tab("records", "tab_records", Icons.Filled.Person, Icons.Outlined.Person)
+    Tab("family", "tab_family", Icons.Filled.Groups, Icons.Outlined.Groups)
 )
 
 private fun NavHostController.navigateTab(route: String) = navigate(route) {
@@ -118,6 +118,9 @@ private fun MainScaffold(vm: MainViewModel, onSignedOut: () -> Unit) {
             composable("medicines") { MedicinesScreen(vm, nav) }
             composable("health") { HealthScreen(vm, nav) }
             composable("records") { RecordsScreen(vm, nav) }
+            composable("family") { FamilyScreen(vm, nav) }
+            composable("family_join") { JoinFamilyScreen(vm, nav) }
+            composable("member/{uid}") { MemberScreen(vm, nav, it.arguments?.getString("uid").orEmpty()) }
 
             composable("med_edit?id={id}", arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true })) {
                 MedicineEditScreen(vm, nav, it.arguments?.getString("id"))

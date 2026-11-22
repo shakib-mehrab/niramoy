@@ -322,6 +322,27 @@ class AppRepository private constructor(context: Context) {
             .recoverCatching { throw AuthError(authCode(it as Exception)) }
     }
 
+    /** Firestore for features built on the same account (family space). Null when Firebase isn't configured. */
+    val cloud: FirebaseFirestore? get() = firestore
+
+    /** Signed in without an account (family member who only follows someone). */
+    val isAnonymous: Boolean get() = auth?.currentUser?.isAnonymous == true
+
+    /** Uses the current user, or creates a silent anonymous identity (no email, no password). */
+    suspend fun ensureSignedIn(): Result<String> = withContext(Dispatchers.IO) {
+        auth?.currentUser?.uid?.let { return@withContext Result.success(it) }
+        val a = auth ?: return@withContext Result.failure(AuthError("err_no_firebase"))
+        runCatching { a.signInAnonymously().await().user?.uid ?: throw IllegalStateException("no user") }
+            .recoverCatching { throw AuthError(authCode(it as Exception)) }
+    }
+
+    /** Keeps an anonymous family member's identity on a new phone by attaching their Google account. */
+    suspend fun linkGoogle(idToken: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val u = auth?.currentUser ?: return@withContext Result.failure(AuthError("err_generic"))
+        runCatching { u.linkWithCredential(GoogleAuthProvider.getCredential(idToken, null)).await(); Unit }
+            .recoverCatching { throw AuthError(authCode(it as Exception)) }
+    }
+
     /** Fresh Firebase ID token for Supabase Storage requests. */
     suspend fun idToken(): String? = runCatching { auth?.currentUser?.getIdToken(false)?.await()?.token }.getOrNull()
 
@@ -421,12 +442,40 @@ class AppRepository private constructor(context: Context) {
         if (auto && existing != null) return
         val now = System.currentTimeMillis()
         save(doseLogs, DoseLogEntity(id, medicineId, date, slot.id, status.id, now, now))
+        adjustStockForDose(medicineId, wasTaken = existing?.status == DoseStatus.TAKEN.id, nowTaken = status == DoseStatus.TAKEN)
+    }
+
+    /**
+     * Stock follows "taken" exactly: becoming taken uses one dose, leaving taken (a corrected mis-tap)
+     * gives it back. Crossing the low-stock line raises the alert once; a refill above it re-arms it.
+     */
+    private suspend fun adjustStockForDose(medicineId: String, wasTaken: Boolean, nowTaken: Boolean) {
+        if (wasTaken == nowTaken) return
+        val m = getMedicine(medicineId) ?: return
+        val s = m.stock ?: return
+        val newStock = (if (nowTaken) s - m.perDose else s + m.perDose).coerceAtLeast(0.0)
+        saveMedicineStock(m, newStock)
+    }
+
+    /** Sets the stock (dose taken, refill...) and fires the one-time low-stock alert when it runs low. */
+    suspend fun saveMedicineStock(m: MedicineEntity, newStock: Double?) {
+        val low = newStock != null && newStock <= m.lowStockAt
+        val alertNow = low && !m.lowStockNotified
+        saveMedicine(m.copy(stock = newStock, lowStockNotified = low && (m.lowStockNotified || alertNow)))
+        if (alertNow) com.niramoy.alarm.StockNotifier.notifySelf(context, m.copy(stock = newStock))
+    }
+
+    suspend fun addStock(medicineId: String, amount: Double) {
+        val m = getMedicine(medicineId) ?: return
+        saveMedicineStock(m, (m.stock ?: 0.0) + amount)
     }
 
     /** Undo a mark (e.g. tapped "taken" by mistake): the dose becomes pending again. */
     suspend fun clearDose(date: String, medicineId: String, slot: Slot) = withContext(Dispatchers.IO) {
         val id = DoseLogEntity.idOf(date, medicineId, slot)
+        val wasTaken = doseDao.get(id)?.status == DoseStatus.TAKEN.id
         doseDao.delete(id)
+        adjustStockForDose(medicineId, wasTaken = wasTaken, nowTaken = false)
         val uid = currentUser.value?.uid ?: return@withContext
         firestore?.collection("users")?.document(uid)?.collection("doseLogs")?.document(id)?.delete()
     }
@@ -479,6 +528,13 @@ class AppRepository private constructor(context: Context) {
     /** Stores a device-only field (localPath) without bumping updatedAt or pushing. */
     suspend fun setRecordLocalPath(id: String, path: String) = withContext(Dispatchers.IO) {
         writeMutex.withLock { recordDao.get(id)?.let { recordDao.upsert(it.copy(localPath = path)) } }
+    }
+
+    suspend fun unsharedRecords(): List<RecordFileEntity> = withContext(Dispatchers.IO) { recordDao.unshared() }
+
+    suspend fun setShareUrl(id: String, url: String) {
+        val r = getRecord(id) ?: return
+        save(records, r.copy(shareUrl = url, updatedAt = System.currentTimeMillis()))
     }
 
     suspend fun markUploaded(id: String, remotePath: String) {

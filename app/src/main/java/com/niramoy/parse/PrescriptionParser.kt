@@ -13,7 +13,11 @@ data class MedicineDraft(
     val timing: MealTiming = MealTiming.AFTER,
     val durationType: DurationType = DurationType.CONTINUOUS,
     val courseDays: Int = 7,
-    val notes: String = ""
+    val notes: String = "",
+    /** Units on hand; null = don't track stock. */
+    val stock: Double? = null,
+    /** Units used per dose (½ tablet = 0.5). */
+    val perDose: Double = 1.0
 )
 
 /**

@@ -95,6 +95,7 @@ private fun MedicineCard(m: MedicineEntity, today: String, week: List<DoseStatus
             Column(Modifier.weight(1f)) {
                 Text(m.name, style = MaterialTheme.typography.headlineSmall)
                 Text(listOf(m.dose, scheduleText(m)).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = AppColors.TextMuted)
+                if (m.tracksStock) { Spacer(Modifier.height(4.dp)); StockLine(m) }
             }
             PillIcon(52)
         }
@@ -154,6 +155,43 @@ fun MedicineForm(d: MedicineDraft, onChange: (MedicineDraft) -> Unit) {
         Stepper(t("days"), tf("n_days", Num.loc(d.courseDays, lang)),
             onMinus = { onChange(d.copy(courseDays = (d.courseDays - 1).coerceAtLeast(1))) },
             onPlus = { onChange(d.copy(courseDays = (d.courseDays + 1).coerceAtMost(365))) })
+    }
+
+    // Stock: optional count that goes down with every "taken" and warns the family when low.
+    Spacer(Modifier.height(14.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.weight(1f)) {
+            Text(t("stock_track"), style = MaterialTheme.typography.titleSmall)
+            Text(t("stock_track_hint"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+        }
+        Switch(d.stock != null, { on -> onChange(d.copy(stock = if (on) 30.0 else null)) })
+    }
+    d.stock?.let { s ->
+        Stepper(t("stock_have"), Num.loc(s, lang),
+            onMinus = { onChange(d.copy(stock = (s - 1).coerceAtLeast(0.0))) },
+            onPlus = { onChange(d.copy(stock = s + 1)) })
+        Text(t("stock_per_dose"), style = MaterialTheme.typography.titleSmall, color = AppColors.TextMuted)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            listOf(0.5, 1.0, 2.0).forEach { u -> ChoiceChip(Num.loc(u, lang), d.perDose == u) { onChange(d.copy(perDose = u)) } }
+        }
+    }
+}
+
+/** "12 left · about 6 days", amber/red when running low. */
+@Composable
+fun StockLine(m: MedicineEntity) {
+    val s = m.stock ?: return
+    val lang = LocalLang.current
+    val low = m.isLowStock
+    val c = if (low) AppColors.Missed else AppColors.TextMuted
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(if (low) Icons.Filled.Warning else Icons.Filled.Inventory2, contentDescription = null, tint = c, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        val days = m.daysLeft
+        Text(
+            tf("stock_left", Num.loc(s, lang)) + (days?.let { " · " + tf("stock_days", Num.loc(it, lang)) } ?: "") + (if (low) " · " + t("stock_buy") else ""),
+            style = MaterialTheme.typography.labelMedium, color = c, fontWeight = if (low) FontWeight.SemiBold else FontWeight.Normal
+        )
     }
 }
 
@@ -340,6 +378,7 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmStop by remember { mutableStateOf(false) }
     var editLog by remember { mutableStateOf<DoseLogEntity?>(null) }
+    var addStockOpen by remember { mutableStateOf(false) }
     val lang = LocalLang.current
     if (m == null) { LaunchedEffect(Unit) { nav.popBackStack() }; return }
     val myLogs = logs.filter { it.medicineId == id }.sortedWith(compareByDescending<DoseLogEntity> { it.date }.thenByDescending { it.at })
@@ -379,6 +418,14 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
             }
         }
         Spacer(Modifier.height(12.dp))
+        AppCard {
+            Text(t("stock"), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            if (m.tracksStock) StockLine(m) else Text(t("stock_off"), style = MaterialTheme.typography.bodySmall, color = AppColors.TextMuted)
+            Spacer(Modifier.height(10.dp))
+            BigOutlineButton(t("stock_add"), Modifier.fillMaxWidth(), icon = Icons.Filled.AddShoppingCart) { addStockOpen = true }
+        }
+        Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BigButton(t("edit"), Modifier.weight(1f), icon = Icons.Filled.Edit) { nav.navigate("med_edit?id=${m.id}") }
             if (m.active) BigOutlineButton(t("stop"), Modifier.weight(1f), icon = Icons.Filled.Pause, color = AppColors.Missed) { confirmStop = true }
@@ -404,6 +451,7 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
             }
         }
     }
+    if (addStockOpen && m != null) AddStockDialog(m.name, onAdd = { vm.addStock(m.id, it); addStockOpen = false }, onDismiss = { addStockOpen = false })
     editLog?.let { l ->
         DoseStatusDialog(m.name, DoseStatus.of(l.status), allowNotYet = false,
             onPick = { st -> if (st != null) vm.setLogStatus(l, st); editLog = null }, onDismiss = { editLog = null })
@@ -412,4 +460,17 @@ fun MedicineDetailScreen(vm: MainViewModel, nav: NavController, id: String) {
         onYes = { vm.setMedicineActive(m.id, false); confirmStop = false }, onNo = { confirmStop = false })
     if (confirmDelete) ConfirmDialog(Strings.f("delete_q", lang, m.name), t("delete_msg"), danger = true,
         onYes = { confirmDelete = false; vm.deleteMedicine(m.id); nav.popBackStack() }, onNo = { confirmDelete = false })
+}
+
+/** "I bought N more": stepper starting at a typical strip/box size. */
+@Composable
+fun AddStockDialog(name: String, onAdd: (Double) -> Unit, onDismiss: () -> Unit) {
+    val lang = LocalLang.current
+    var n by remember { mutableIntStateOf(30) }
+    FormDialog(tf("stock_add_title", name), onDismiss = onDismiss, onSave = { onAdd(n.toDouble()) }) {
+        Stepper(t("stock_bought"), Num.loc(n, lang), onMinus = { n = (n - 1).coerceAtLeast(1) }, onPlus = { n += 1 })
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+            listOf(10, 14, 30, 60).forEach { v -> ChoiceChip(Num.loc(v, lang), n == v) { n = v } }
+        }
+    }
 }

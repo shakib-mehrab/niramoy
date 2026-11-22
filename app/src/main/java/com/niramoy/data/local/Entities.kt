@@ -1,5 +1,6 @@
 package com.niramoy.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -32,9 +33,28 @@ data class MedicineEntity(
     val active: Boolean = true,      // false = stopped by the user (history kept, no reminders)
     val createdAt: Long,
     override val updatedAt: Long,
-    val deleted: Boolean = false
+    val deleted: Boolean = false,
+    /** Units on hand (tablets, ml...). null = stock not tracked for this medicine. */
+    val stock: Double? = null,
+    /** Units used by one dose; subtracted on every "taken". */
+    @ColumnInfo(defaultValue = "1.0") val perDose: Double = 1.0,
+    /** At or below this many units the person and their family are told to buy more. */
+    @ColumnInfo(defaultValue = "3.0") val lowStockAt: Double = 3.0,
+    /** The low-stock warning for the current run-down was already shown (reset by a refill). */
+    @ColumnInfo(defaultValue = "0") val lowStockNotified: Boolean = false
 ) : Synced {
     val slotSet: Set<Slot> get() = Slot.parseSet(slots)
+
+    val tracksStock: Boolean get() = stock != null
+    val isLowStock: Boolean get() = stock != null && stock <= lowStockAt
+
+    /** Whole days of medicine left at the current schedule (null when not tracked or no daily doses). */
+    val daysLeft: Int?
+        get() {
+            val s = stock ?: return null
+            val perDay = perDose * slotSet.size
+            return if (perDay <= 0.0) null else kotlin.math.floor(s / perDay).toInt()
+        }
     val timing: MealTiming get() = MealTiming.of(mealTiming)
     val duration: DurationType get() = DurationType.of(durationType)
 
@@ -128,7 +148,9 @@ data class RecordFileEntity(
     val remotePath: String = "",     // "<uid>/<id>.jpg" in the bucket; empty until uploaded
     val mime: String = "image/jpeg",
     override val updatedAt: Long,
-    val deleted: Boolean = false
+    val deleted: Boolean = false,
+    /** Long-lived signed link created by the owner's phone so family members can open the file. */
+    @ColumnInfo(defaultValue = "") val shareUrl: String = ""
 ) : Synced
 
 @Entity(tableName = "contacts")

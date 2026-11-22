@@ -43,8 +43,15 @@ import com.niramoy.ui.theme.AppColors
 import com.niramoy.util.Dates
 import com.niramoy.util.Num
 
-/** Very good -> very bad, each with a face and a word. */
-val MOODS = listOf(5 to "😄", 4 to "🙂", 3 to "😐", 2 to "🙁", 1 to "😫")
+/** Very good -> very bad: a Material sentiment icon and its colour (always shown with a word). */
+val MOODS: List<Pair<Int, ImageVector>> = listOf(
+    5 to Icons.Filled.SentimentVerySatisfied, 4 to Icons.Filled.SentimentSatisfied, 3 to Icons.Filled.SentimentNeutral,
+    2 to Icons.Filled.SentimentDissatisfied, 1 to Icons.Filled.SentimentVeryDissatisfied
+)
+
+fun moodColor(m: Int): Color = when (m) {
+    5 -> Color(0xFF2E8467); 4 -> Color(0xFF5E9C7F); 3 -> Color(0xFFA87518); 2 -> Color(0xFFD07A4A); else -> Color(0xFFC9524A)
+}
 
 /** Metric card: coloured icon + title + "+" (reference measurement tracker). */
 @Composable
@@ -125,7 +132,7 @@ fun HealthScreen(vm: MainViewModel, nav: NavController) {
                             .padding(vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(face, fontSize = 28.sp)
+                        Icon(face, contentDescription = null, tint = moodColor(v), modifier = Modifier.size(32.dp))
                         Text(t("mood_$v"), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
                             color = if (on) AppColors.Brand else AppColors.TextMuted)
                     }
@@ -237,7 +244,11 @@ private fun HealthCard(h: HealthLogEntity, lang: String, onClick: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(Num.date(h.date, lang, withYear = false) + " · " + Num.time(Dates.minuteOfDay(h.at), lang), style = MaterialTheme.typography.titleSmall,
                 color = AppColors.TextMuted, modifier = Modifier.weight(1f))
-            h.mood?.let { m -> Text(MOODS.firstOrNull { it.first == m }?.second.orEmpty() + " " + t("mood_$m"), style = MaterialTheme.typography.bodyMedium) }
+            h.mood?.let { m ->
+                Icon(MOODS.first { it.first == m }.second, contentDescription = null, tint = moodColor(m), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(t("mood_$m"), style = MaterialTheme.typography.bodyMedium)
+            }
         }
         h.sugar?.let { v ->
             ValueRow(Icons.Filled.Bloodtype, t("sugar"), "${Num.loc(v, lang)} mg/dL" + (SugarTag.of(h.sugarTag)?.let { " · " + t("tag_${it.id}") } ?: ""),
@@ -301,7 +312,7 @@ fun HealthEntryScreen(vm: MainViewModel, nav: NavController, id: String?, fromVo
         AppCard {
             Text(t("how_are_you"), style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-                MOODS.forEach { (m, face) -> ChoiceChip("$face ${t("mood_$m")}", mood == m) { mood = if (mood == m) null else m } }
+                MOODS.forEach { (m, face) -> ChoiceChip(t("mood_$m"), mood == m, icon = face) { mood = if (mood == m) null else m } }
             }
         }
         Spacer(Modifier.height(12.dp))

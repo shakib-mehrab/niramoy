@@ -1,11 +1,108 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each signed-in user can read/write only their own tree:
-    //   users/{uid}/settings/main, users/{uid}/{medicines|doseLogs|healthLogs|visits|doctors|records|contacts}/{id}
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function famDoc(fid) { return /databases/$(database)/documents/families/$(fid); }
+    function memberDoc(fid, uid) { return /databases/$(database)/documents/families/$(fid)/members/$(uid); }
+    function isMember(fid, uid) { return exists(memberDoc(fid, uid)); }
+    function viewerDoc(userId) { return /databases/$(database)/documents/users/$(userId)/viewers/$(me()); }
+
+    // A family member may read someone's health data only while: a viewer link exists, BOTH are still
+    // members of that family, and the person still shares. Leaving or switching sharing off ends access.
+    function isViewer(userId) {
+      return signedIn()
+        && exists(viewerDoc(userId))
+        && isMember(get(viewerDoc(userId)).data.familyId, me())
+        && get(memberDoc(get(viewerDoc(userId)).data.familyId, userId)).data.sharing == true;
     }
-    // Everything else is denied (no test-mode rule).
+
+    // ---------------------------------------------------------------- personal data
+    match /users/{userId} {
+      // The account owner: everything under their own tree.
+      match /{document=**} {
+        allow read, write: if signedIn() && me() == userId;
+      }
+
+      // Family: read-only access to shared collections...
+      match /{col}/{docId} {
+        allow read: if col in ['medicines', 'doseLogs', 'healthLogs', 'records', 'visits', 'settings'] && isViewer(userId);
+        // ...and the one thing they may change: the stock count of a medicine (after buying it).
+        allow update: if col == 'medicines' && isViewer(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'lowStockNotified', 'updatedAt']);
+      }
+
+      // Viewer links: created by either side, only between members of the same family, only if the
+      // person being viewed shares. Either side can remove a link.
+      match /viewers/{viewerId} {
+        allow create, update: if signedIn() && (me() == viewerId || me() == userId)
+          && isMember(request.resource.data.familyId, viewerId)
+          && isMember(request.resource.data.familyId, userId)
+          && get(memberDoc(request.resource.data.familyId, userId)).data.sharing == true;
+        allow delete: if signedIn() && (me() == viewerId || me() == userId);
+      }
+
+      // Messages from family ("please buy", "I'll bring it").
+      match /nudges/{id} {
+        allow create: if isViewer(userId) && request.resource.data.fromUid == me();
+      }
+    }
+
+    // ---------------------------------------------------------------- family spaces
+    match /families/{fid} {
+      allow read: if signedIn() && isMember(fid, me());
+
+      // Created with the creator as the only member and the free seat limit.
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == me()
+        && request.resource.data.seatLimit == 5
+        && request.resource.data.memberCount == 1
+        && existsAfter(memberDoc(fid, me()));
+
+      // Only memberCount changes: +1 when someone joins (never past seatLimit), -1 when someone leaves or is removed.
+      // seatLimit itself can only be raised from the Firebase console (future paid seats).
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount'])
+        && (
+          (request.resource.data.memberCount == resource.data.memberCount + 1
+            && resource.data.memberCount < resource.data.seatLimit
+            && !exists(memberDoc(fid, me()))
+            && existsAfter(memberDoc(fid, me())))
+          ||
+          (request.resource.data.memberCount == resource.data.memberCount - 1
+            && isMember(fid, me()))
+        );
+
+      allow delete: if signedIn() && resource.data.ownerUid == me();
+
+      match /members/{uid} {
+        allow read: if signedIn() && isMember(fid, me());
+
+        // Join yourself: as the creator, or with the family's current invite code, within the seat limit.
+        allow create: if signedIn() && uid == me()
+          && (
+            getAfter(famDoc(fid)).data.ownerUid == me()
+            || request.resource.data.code == get(famDoc(fid)).data.code
+          )
+          && getAfter(famDoc(fid)).data.memberCount <= getAfter(famDoc(fid)).data.seatLimit;
+
+        // Your own name and sharing switch.
+        allow update: if signedIn() && uid == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'sharing']);
+
+        // Leave, or the owner removes someone.
+        allow delete: if signedIn() && (uid == me() || get(famDoc(fid)).data.ownerUid == me());
+      }
+    }
+
+    // Invite code -> family id. Readable one code at a time (no listing), written by the family owner.
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn() && getAfter(famDoc(request.resource.data.familyId)).data.ownerUid == me();
+      allow delete: if signedIn() && get(famDoc(resource.data.familyId)).data.ownerUid == me();
+    }
+
+    // Everything else is denied.
   }
 }

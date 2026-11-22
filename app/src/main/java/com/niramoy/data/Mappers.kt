@@ -15,14 +15,17 @@ object Mappers {
     fun MedicineEntity.toMap(): Map<String, Any?> = mapOf(
         "name" to name, "dose" to dose, "mealTiming" to mealTiming, "slots" to slots,
         "durationType" to durationType, "courseDays" to courseDays, "startDate" to startDate,
-        "notes" to notes, "active" to active, "createdAt" to createdAt, "updatedAt" to updatedAt, "deleted" to deleted
+        "notes" to notes, "active" to active, "createdAt" to createdAt, "updatedAt" to updatedAt, "deleted" to deleted,
+        "stock" to stock, "perDose" to perDose, "lowStockAt" to lowStockAt, "lowStockNotified" to lowStockNotified
     )
 
     fun medicine(id: String, m: Map<String, Any?>) = MedicineEntity(
         id = id, name = m.str("name"), dose = m.str("dose"), mealTiming = m.str("mealTiming", "after"),
         slots = m.str("slots"), durationType = m.str("durationType", "continuous"), courseDays = m.int("courseDays"),
         startDate = m.str("startDate"), notes = m.str("notes"), active = m.bool("active", true),
-        createdAt = m.long("createdAt"), updatedAt = m.long("updatedAt"), deleted = m.bool("deleted")
+        createdAt = m.long("createdAt"), updatedAt = m.long("updatedAt"), deleted = m.bool("deleted"),
+        stock = m.dblOrNull("stock"), perDose = m.dblOrNull("perDose") ?: 1.0, lowStockAt = m.dblOrNull("lowStockAt") ?: 3.0,
+        lowStockNotified = m.bool("lowStockNotified")
     )
 
     fun DoseLogEntity.toMap(): Map<String, Any?> = mapOf(
@@ -71,13 +74,13 @@ object Mappers {
     /** localPath is device-specific and never synced. */
     fun RecordFileEntity.toMap(): Map<String, Any?> = mapOf(
         "kind" to kind, "date" to date, "title" to title, "doctorName" to doctorName, "reportType" to reportType,
-        "remotePath" to remotePath, "mime" to mime, "updatedAt" to updatedAt, "deleted" to deleted
+        "remotePath" to remotePath, "mime" to mime, "updatedAt" to updatedAt, "deleted" to deleted, "shareUrl" to shareUrl
     )
 
     fun record(id: String, m: Map<String, Any?>, localPath: String) = RecordFileEntity(
         id = id, kind = m.str("kind", "prescription"), date = m.str("date"), title = m.str("title"),
         doctorName = m.str("doctorName"), reportType = m.str("reportType"), localPath = localPath,
-        remotePath = m.str("remotePath"), mime = m.str("mime", "image/jpeg"),
+        remotePath = m.str("remotePath"), mime = m.str("mime", "image/jpeg"), shareUrl = m.str("shareUrl"),
         updatedAt = m.long("updatedAt"), deleted = m.bool("deleted")
     )
 

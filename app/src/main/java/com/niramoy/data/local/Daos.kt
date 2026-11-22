@@ -119,6 +119,10 @@ interface RecordDao {
     @Query("SELECT * FROM records WHERE deleted = 0 AND remotePath = '' AND localPath != ''")
     suspend fun pendingUploads(): List<RecordFileEntity>
 
+    /** Uploaded files that still need a family share link. */
+    @Query("SELECT * FROM records WHERE deleted = 0 AND remotePath != '' AND shareUrl = ''")
+    suspend fun unshared(): List<RecordFileEntity>
+
     @Query("SELECT * FROM records WHERE id = :id")
     suspend fun get(id: String): RecordFileEntity?
 

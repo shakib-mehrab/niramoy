@@ -64,8 +64,8 @@ object ReminderNotifier {
             .setFullScreenIntent(fullScreenPi(context, key), true)
             .setOngoing(true)
             .setAutoCancel(false)
-            .addAction(R.drawable.ic_stat_pill, "✅ " + Strings.t("act_taken", lang), actionPi(context, ReminderScheduler.ACTION_TAKEN, key))
-            .addAction(R.drawable.ic_stat_pill, "⏰ " + Strings.t("act_snooze", lang), actionPi(context, ReminderScheduler.ACTION_SNOOZE, key))
+            .addAction(R.drawable.ic_action_check, Strings.t("act_taken", lang), actionPi(context, ReminderScheduler.ACTION_TAKEN, key))
+            .addAction(R.drawable.ic_action_snooze, Strings.t("act_snooze", lang), actionPi(context, ReminderScheduler.ACTION_SNOOZE, key))
             .build()
     }
 

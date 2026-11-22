@@ -16,6 +16,8 @@ class NiramoyApp : Application() {
         super.onCreate()
         NotificationChannels.ensureCreated(this)
         com.niramoy.data.KeepAliveWorker.schedule(this)
+        com.niramoy.data.FamilyRepository.getInstance(this) // live family state + instant nudges while running
+        com.niramoy.data.FamilyWorker.schedule(this)
         val repo = AppRepository.getInstance(this)
         // Any change to medicines, routine/reminder settings or visits (local edit or synced from the
         // cloud, e.g. restore after reinstall) rebuilds the alarms.
