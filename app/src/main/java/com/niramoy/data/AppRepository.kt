@@ -192,11 +192,16 @@ class AppRepository private constructor(context: Context) {
         currentUser.value = AppUser(fbUser.uid, fbUser.email.orEmpty(), fbUser.displayName.orEmpty())
         scope.launch {
             attachListeners(fbUser.uid)
-            // Full two-way sync once per account per install (restores data after reinstall);
-            // afterwards realtime listeners + the offline queue keep both sides in step.
-            if (authPrefs.getString("full_synced_uid", null) != fbUser.uid) {
-                restoring.value = true
-                fullSync().onSuccess { authPrefs.edit().putString("full_synced_uid", fbUser.uid).apply() }
+            // Full two-way sync: first time this account is seen on this install (restore after reinstall,
+            // shown as "restoring"), and quietly again at least once a day. The daily pass heals any row
+            // that never reached the cloud (e.g. created before signing in) so a reinstall can't lose it.
+            val firstTime = authPrefs.getString("full_synced_uid", null) != fbUser.uid
+            val stale = System.currentTimeMillis() - authPrefs.getLong("full_synced_at", 0L) > 24 * 60 * 60 * 1000L
+            if (firstTime || stale) {
+                if (firstTime) restoring.value = true
+                fullSync().onSuccess {
+                    authPrefs.edit().putString("full_synced_uid", fbUser.uid).putLong("full_synced_at", System.currentTimeMillis()).apply()
+                }
                 restoring.value = false
             }
             com.niramoy.data.UploadWorker.enqueue(context)

@@ -41,6 +41,12 @@ Needs Android 7.0 or newer. It's built to work well on small, low-end phones.
   and temperature, with simple charts and low / normal / high labels. **Speak instead of typing:** "সুগার ১২০, প্রেশার ১৩০ বাই ৮০".
 - **Records:** doctor visits (with a next-visit reminder), a prescription and report gallery (photos / PDF),
   a doctor phone book, blood group, allergies and emergency contacts.
+- **Family space:** one person creates a space and shares a 6-letter code. Others (a son, a daughter, the other parent)
+  join with the code, **with no account needed**. Members see each other's medicines, today's doses, health log,
+  prescriptions and next visit, and can tap **Remind to buy** / **I'll buy it**. Each person decides whether to share. Up to
+  5 people per space for now.
+- **Medicine stock:** enter how many tablets are left. Each dose marked taken counts one down (or ½, 2, …). When
+  only a few are left, the phone and every family member get a notification.
 - **Emergency button:** opens the phone's own dialer, a WhatsApp message in Bangla (optionally with a map link),
   or 999.
 - **Offline first + cloud backup:** everything works with no internet and syncs later. Reinstall, sign in,
@@ -57,6 +63,9 @@ The APK published here uses **the maintainer's free Firebase and Supabase projec
 - The project owner can technically see stored data through the Firebase/Supabase consoles. Data isn't
   end-to-end encrypted. If that isn't acceptable, **build your own copy with your own free backend**
   (steps below), which takes about 20 minutes.
+- **Family spaces:** someone can only read your data while you are both in the same space *and* you have
+  sharing on. Leaving, removing someone or turning sharing off cuts access immediately. Family members can't edit your data,
+  except to add to a medicine's stock count.
 - No ads, no analytics, no tracking. Location is only read when you press the WhatsApp emergency button with
   "send location" turned on.
 - Using it without an account is fine; data then stays only on that phone.
@@ -115,7 +124,8 @@ Requirements: **JDK 17**, the **Android SDK** (Android Studio, or command-line t
 
 ### 1. Firebase (sign-in + database), Spark plan
 1. Go to https://console.firebase.google.com and choose **Add project** (Analytics off).
-2. Under **Authentication → Sign-in method**, enable **Email/Password** and **Google**.
+2. Under **Authentication → Sign-in method**, enable **Email/Password**, **Google** and **Anonymous** (Anonymous is used by
+   family members who join with a code and no account).
 3. Under **Firestore Database → Create database**, choose **Production mode** and a nearby region.
 4. Under **Project settings → Your apps → Add Android app**, use package `com.niramoy.app`. Add the **SHA-1** of your
    debug key and of your release key (get them with `./gradlew signingReport` or `keytool -list -v -keystore <file>`).
@@ -242,6 +252,9 @@ On a real phone, ideally a small, low-end one:
 ## Known limits
 - **Handwritten prescriptions:** OCR is weak on handwriting, which is why the review screen is mandatory.
 - **Aggressive battery savers** (some Xiaomi / Oppo / Vivo / Realme phones) need *Autostart* allowed once. The setup screen opens the right page.
+- **Family alerts aren't push notifications** (that would need a paid server). The app checks every ~15 minutes in the
+  background and instantly while it's open, so an alert can arrive a few minutes late.
+- **If Android notifications are off for the app**, no reminder can show. Home shows a warning with a button to fix it.
 - **Android 14+:** the full-screen alarm needs the "full screen" permission. Without it, a big notification shows instead.
 - **Bangla speech recognition** needs the Google app.
 

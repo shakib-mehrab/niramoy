@@ -16,6 +16,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import android.content.Intent
+import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.niramoy.i18n.Strings
 import com.niramoy.model.DoseItem
 import com.niramoy.model.DoseStatus
@@ -78,6 +85,7 @@ fun HomeScreen(vm: MainViewModel, nav: NavController) {
         }
 
         ScreenColumn {
+            NotificationsOffBanner()
             next?.takeIf { selected == today }?.let { g ->
                 NextDoseCard(g, today, now) { vm.markGroupTaken(g.group.key) }
                 Spacer(Modifier.height(14.dp))
@@ -121,6 +129,37 @@ fun HomeScreen(vm: MainViewModel, nav: NavController) {
     }
 
     editing?.let { item -> DoseStatusDialog(item.medicine.name, item.status, onPick = { vm.setDoseStatus(item, it); editing = null }, onDismiss = { editing = null }) }
+}
+
+/** Reminders are useless if Android blocks our notifications: say so and offer the fix. Re-checked on every resume. */
+@Composable
+private fun NotificationsOffBanner() {
+    val context = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    fun enabled() = NotificationManagerCompat.from(context).areNotificationsEnabled()
+    var on by remember { mutableStateOf(enabled()) }
+    DisposableEffect(owner) {
+        val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) on = enabled() }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+    if (on) return
+    AppCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.NotificationsOff, contentDescription = null, tint = AppColors.Missed, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(t("notif_off_title"), style = MaterialTheme.typography.titleMedium, color = AppColors.Text, fontWeight = FontWeight.SemiBold)
+                Text(t("notif_off_msg"), style = MaterialTheme.typography.bodyMedium, color = AppColors.TextMuted)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        BigButton(t("notif_off_fix"), Modifier.fillMaxWidth(), icon = Icons.Filled.NotificationsActive) {
+            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+    Spacer(Modifier.height(14.dp))
 }
 
 /** Change a dose to Taken / Skipped / Missed / Not yet. */

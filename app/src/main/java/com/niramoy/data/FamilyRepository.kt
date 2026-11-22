@@ -116,8 +116,12 @@ class FamilyRepository private constructor(context: Context) {
         if (uid == null || db == null) { loading.value = false; return }
         loading.value = true
         pointerListener = db.collection("users").document(uid).collection("meta").document("family")
-            .addSnapshotListener { snap, err ->
+            // INCLUDE: also called when the server confirms our own write (data unchanged, pending flag cleared).
+            .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) { snap, err ->
                 if (err != null) { Log.w(TAG, "pointer: ${err.message}"); loading.value = false; return@addSnapshotListener }
+                // Our own write shows up locally before the server has it; wait for the server copy
+                // (otherwise the family reads below race the batch that makes us a member).
+                if (snap?.metadata?.hasPendingWrites() == true) return@addSnapshotListener
                 val fid = snap?.getString("familyId")
                 attachFamily(fid)
                 loading.value = false
@@ -143,14 +147,14 @@ class FamilyRepository private constructor(context: Context) {
         if (fid == null) { family.value = null; members.value = emptyList(); return }
         val ref = db.collection("families").document(fid)
         listeners += ref.addSnapshotListener { snap, err ->
-            if (err != null || snap == null || !snap.exists()) {
-                // Deleted, or we were removed: forget the pointer.
-                if (err?.let { (it as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED } != false) {
-                    family.value = null; members.value = emptyList()
-                    myUid?.let { u -> db.collection("users").document(u).collection("meta").document("family").delete() }
-                }
+            val denied = (err as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
+            val gone = err == null && snap != null && !snap.exists() && !snap.metadata.isFromCache
+            if (denied || gone) {
+                // Maybe removed or deleted — or a read that raced our own join. Ask the server before forgetting.
+                scope.launch { recheckMembership(fid) }
                 return@addSnapshotListener
             }
+            if (err != null || snap == null || !snap.exists()) return@addSnapshotListener
             family.value = Family(
                 id = fid, name = snap.getString("name").orEmpty(), ownerUid = snap.getString("ownerUid").orEmpty(),
                 code = snap.getString("code").orEmpty(), seatLimit = (snap.getLong("seatLimit") ?: DEFAULT_SEATS.toLong()).toInt(),
@@ -163,6 +167,28 @@ class FamilyRepository private constructor(context: Context) {
             }?.sortedBy { it.joinedAt } ?: return@addSnapshotListener
             members.value = list
             scope.launch { syncViewerLinks(fid, list) }
+        }
+    }
+
+    /** Forget the family only if the server confirms we are no longer a member; otherwise re-listen. */
+    private suspend fun recheckMembership(fid: String) {
+        val db = fs ?: return
+        val uid = myUid ?: return
+        val stillMember = runCatching {
+            db.collection("families").document(fid).collection("members").document(uid)
+                .get(com.google.firebase.firestore.Source.SERVER).await().exists()
+        }.getOrElse { e ->
+            // Offline: keep everything as is. Denied: the family is gone or we were removed.
+            if ((e as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) false else return
+        }
+        if (stillMember) {
+            kotlinx.coroutines.delay(1_500)
+            synchronized(this) { if (familyId == fid) { detachFamily() } }
+            attachFamily(fid)
+        } else {
+            family.value = null; members.value = emptyList()
+            synchronized(this) { if (familyId == fid) detachFamily() }
+            runCatching { db.collection("users").document(uid).collection("meta").document("family").delete().await() }
         }
     }
 
@@ -326,6 +352,7 @@ class FamilyRepository private constructor(context: Context) {
         t is FamilyError -> t
         t is com.google.firebase.FirebaseNetworkException -> FamilyError("err_no_internet")
         (t as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.UNAVAILABLE -> FamilyError("err_no_internet")
+        (t as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED -> FamilyError("family_denied")
         else -> { Log.w(TAG, "family op failed", t); FamilyError("err_generic") }
     }
 

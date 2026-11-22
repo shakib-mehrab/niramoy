@@ -86,6 +86,7 @@ fun FamilyScreen(vm: MainViewModel, nav: NavController) {
     var confirmLeave by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<FamilyMember?>(null) }
     val me = vm.myUid
+    val deletes = family?.ownerUid == me && members.size <= 1
 
     Page(vm, t("tab_family")) {
         when {
@@ -183,13 +184,15 @@ fun FamilyScreen(vm: MainViewModel, nav: NavController) {
         }
     }
 
-    if (createOpen) CreateFamilyDialog(defaultMyName = s.name, onDismiss = { createOpen = false }) { fam, my ->
+    if (createOpen) CreateFamilyDialog(defaultMyName = s.name, onDismiss = { createOpen = false }) { fam, my, done ->
         scope.launch {
             val err = vm.createFamily(fam, my)
-            if (err == null) createOpen = false else toast(context, Strings.t(err, lang))
+            done(err)
+            if (err == null) createOpen = false
         }
     }
-    if (confirmLeave) ConfirmDialog(t("leave_family_q"), t("leave_family_msg"), danger = true, onYes = {
+    if (confirmLeave) ConfirmDialog(t(if (deletes) "family_delete_q" else "leave_family_q"),
+        t(if (deletes) "family_delete_msg" else "leave_family_msg"), danger = true, onYes = {
         confirmLeave = false
         scope.launch { vm.leaveFamily()?.let { toast(context, Strings.t(it, lang)) } }
     }, onNo = { confirmLeave = false })
@@ -276,15 +279,21 @@ private fun Pill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: St
 }
 
 @Composable
-private fun CreateFamilyDialog(defaultMyName: String, onDismiss: () -> Unit, onCreate: (String, String) -> Unit) {
+private fun CreateFamilyDialog(defaultMyName: String, onDismiss: () -> Unit, onCreate: (String, String, (String?) -> Unit) -> Unit) {
     val lang = LocalLang.current
     var my by remember { mutableStateOf(defaultMyName) }
     var fam by remember { mutableStateOf(if (defaultMyName.isNotBlank()) Strings.f("family_name_default", lang, defaultMyName.split(" ").first()) else "") }
     var busy by remember { mutableStateOf(false) }
-    FormDialog(t("family_create"), onDismiss = onDismiss, saveEnabled = !busy && my.isNotBlank() && fam.isNotBlank(), onSave = { busy = true; onCreate(fam, my) }) {
+    var error by remember { mutableStateOf<String?>(null) }
+    FormDialog(t("family_create"), onDismiss = onDismiss, saveEnabled = !busy && my.isNotBlank() && fam.isNotBlank(), onSave = {
+        busy = true; error = null
+        onCreate(fam, my) { err -> busy = false; error = err }
+    }) {
         BigField(t("your_name"), my, { my = it }, placeholder = t("your_name_hint"))
         Spacer(Modifier.height(10.dp))
         BigField(t("family_name"), fam, { fam = it })
+        // Error stays visible in the dialog (and Save works again) instead of a toast that disappears.
+        error?.let { Text(t(it), color = AppColors.Missed, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp)) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 10.dp))
     }
 }

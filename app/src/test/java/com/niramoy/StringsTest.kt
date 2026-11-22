@@ -45,7 +45,7 @@ class StringsTest {
             "state_completed", "lvl_high", "lvl_low", "lvl_normal", "tab_home",
             "family_how_1", "family_how_2", "family_how_3", "family_how_4",
             "nudge_buy", "nudge_buy_title", "nudge_buying", "nudge_buying_title",
-            "family_full", "family_code_invalid", "family_already", "family_owner_leave", "family_none",
+            "family_full", "family_denied", "family_code_invalid", "family_already", "family_owner_leave", "family_none",
             "nudge_sent", "stock_added", "linked").forEach { used += it }
         val missing = used.filter { it !in StringsEn.map || it !in StringsBn.map }.sorted()
         assertTrue("missing keys: $missing", missing.isEmpty())
